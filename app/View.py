@@ -2,9 +2,11 @@ from tkinter import *
 from tkinter import messagebox
 import tkinter.ttk as ttk
 import Controller
+import Model
 
 class View:
     def __init__(self, root=None):
+        self.model= Model.Model()
         self.messagebox = messagebox
         self.root = root
         # self.controller = Controller.Controller()
@@ -30,6 +32,7 @@ class View:
 
     def welcome_page(self):
         # Create or update the welcome page
+        self.root.geometry("400x400")
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -38,9 +41,10 @@ class View:
 
         info_label = Label(self.root, text="Discover and attend exciting events in your area.")
         info_label.pack()
-        self.set_window_size(400, self.root.winfo_reqheight())
+        # self.set_window_size(400, self.root.winfo_reqheight())
 
     def login_page(self):
+        self.root.geometry("500x500")
         # Create or update the login page
         for widget in self.root.winfo_children():
             widget.destroy()
@@ -68,10 +72,11 @@ class View:
         # Back button to return to the welcome page
         back_button = Button(self.root, text="Back to Welcome", command=self.welcome_page)
         back_button.pack(pady=10)   
-        self.set_window_size(400, self.root.winfo_reqheight())
+        # self.set_window_size(400, self.root.winfo_reqheight())
 
     def register_page(self):
         # Create or update the registration page
+        self.root.geometry("500x600")
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -118,7 +123,10 @@ class View:
         # Back button to return to the welcome page
         back_button = Button(self.root, text="Back to Welcome", command=self.welcome_page)
         back_button.pack(pady=10)
-        self.set_window_size(600, self.root.winfo_reqheight())
+        # self.set_window_size(600, self.root.winfo_reqheight())
+
+    def handle_registration(self,firstName,lastName,gmail,phoneNumber,dob):
+        self.model.registerUser(firstName,lastName,gmail,phoneNumber,dob)
 
 
 if __name__ == "__main__":

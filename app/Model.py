@@ -50,4 +50,15 @@ class Model:
             ''')
 
 
-model = Model()
+    def registerUser(self,firstName,lastName,gmail,phoneNumber,dob):
+
+        with sqlite3.connect(self.user_db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO users (user_firstname,user_lastname,user_gmailId,
+                           user_phonenumber,user_dateofbirth)
+                VALUES(?,?,?,?,?)
+                ''',(firstName,lastName,gmail,phoneNumber,dob))
+            conn.commit()
+
+
