@@ -301,6 +301,26 @@ class EventHub():
         back_button = tkinter.Button(self.tkn, text="Back to Welcome", command=self.show_welcome_page)
         back_button.pack(pady=10)
 
+    def registerEvent(self):
+        # Get the user's input
+        eventName = self.event_name_entry.get()
+        eventDate = self.event_date_entry.get()
+        eventTime = self.event_time_entry.get()
+        eventLocation = self.event_location_entry.get()
+        eventDescription = self.event_description_entry.get()
+
+        # Validate the user's input
+        if eventName == "" or eventDate == "" or eventTime == "" or eventLocation == "" or eventDescription == "":
+            messagebox.showerror("Error", "Please fill in all fields")
+        else:
+            # Insert the user's input into the database
+            with sqlite3.connect("event.db") as db:
+                cursor = db.cursor()
+                cursor.execute("""INSERT INTO event(eventName, eventDate, eventTime, eventLocation, eventDescription)
+                VALUES(?,?,?,?,?)""", (eventName, eventDate, eventTime, eventLocation, eventDescription))
+                db.commit()
+            messagebox.showinfo("Success", "You have registered successfully!")
+            self.show_event_page()
 #-----------------------------------------------------------------------------------------------------------------------
 
 
