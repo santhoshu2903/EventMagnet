@@ -2,9 +2,10 @@ import tkinter
 from tkinter import messagebox
 import tkinter.ttk as ttk
 import sqlite3
-
-
-
+from PIL import ImageTk, Image
+import mysql.connector as mysql
+import random
+import smtplib
 
 class EventHub():
     def __init__(self):
@@ -14,204 +15,310 @@ class EventHub():
         self.tkn.geometry("800x500")
         self.show_welcome_page()
 
+
+        database = {
+            'user': 'root',
+            'password': 'root',
+            'host': 'localhost',
+            'port': 3306,
+            'database': 'eventhub'
+        }
+
+
+        self.database= mysql.connect(**database)
+        self.cursor = self.database.cursor()
+
         # Create the database tables
         self.createUserTable()
         self.createEventTable()
         self.createEventRegistrationTable()
         self.createEventCommentTable()
 
-
-
-
     def createUserTable(self):
-        with sqlite3.connect("user.db") as db:
-            cursor = db.cursor()
-            cursor.execute("""CREATE TABLE IF NOT EXISTS user(
-                userID integer PRIMARY KEY AUTOINCREMENT,
-                firstName text NOT NULL,
-                lastName text NOT NULL,
-                email text NOT NULL,
-                password text NOT NULL);""")
-            db.commit()
+        # SQL statement for creating the 'user' table
+        create_user_table = """
+        CREATE TABLE IF NOT EXISTS user (
+            userID INT AUTO_INCREMENT PRIMARY KEY,
+            firstName VARCHAR(255) NOT NULL,
+            lastName VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            password VARCHAR(255) NOT NULL
+        );
+        """
+        self.cursor.execute(create_user_table)
+        self.database.commit()
 
     def createEventTable(self):
-        with sqlite3.connect("event.db") as db:
-            cursor = db.cursor()
-            cursor.execute("""CREATE TABLE IF NOT EXISTS event(
-                eventID integer PRIMARY KEY AUTOINCREMENT,
-                eventName text NOT NULL,
-                eventDate text NOT NULL,
-                eventTime text NOT NULL,
-                eventLocation text NOT NULL,
-                eventDescription text NOT NULL);""")
-            db.commit()
+        # SQL statement for creating the 'event' table
+        create_event_table = """
+        CREATE TABLE IF NOT EXISTS event (
+            eventID INT AUTO_INCREMENT PRIMARY KEY,
+            eventName VARCHAR(255) NOT NULL,
+            eventDate VARCHAR(255) NOT NULL,
+            eventTime VARCHAR(255) NOT NULL,
+            eventLocation VARCHAR(255) NOT NULL,
+            eventDescription TEXT NOT NULL
+        );
+        """
+        self.cursor.execute(create_event_table)
+        self.database.commit()
 
     def createEventRegistrationTable(self):
-        with sqlite3.connect("eventRegistration.db") as db:
-            cursor = db.cursor()
-            cursor.execute("""CREATE TABLE IF NOT EXISTS eventRegistration(
-                eventRegistrationID integer PRIMARY KEY AUTOINCREMENT,
-                eventID integer NOT NULL,
-                userID integer NOT NULL,
-                FOREIGN KEY(eventID) REFERENCES event(eventID),
-                FOREIGN KEY(userID) REFERENCES user(userID));""")
-            db.commit()
+        # SQL statement for creating the 'eventRegistration' table
+        create_event_registration_table = """
+        CREATE TABLE IF NOT EXISTS eventRegistration (
+            eventRegistrationID INT AUTO_INCREMENT PRIMARY KEY,
+            eventID INT NOT NULL,
+            userID INT NOT NULL,
+            FOREIGN KEY (eventID) REFERENCES event (eventID),
+            FOREIGN KEY (userID) REFERENCES user (userID)
+        );
+        """
+        self.cursor.execute(create_event_registration_table)
+        self.database.commit()
 
     def createEventCommentTable(self):
-        with sqlite3.connect("eventComment.db") as db:
-            cursor = db.cursor()
-            cursor.execute("""CREATE TABLE IF NOT EXISTS eventComment(
-                eventCommentID integer PRIMARY KEY AUTOINCREMENT,
-                eventID integer NOT NULL,
-                userID integer NOT NULL,
-                comment text NOT NULL,
-                FOREIGN KEY(eventID) REFERENCES event(eventID),
-                FOREIGN KEY(userID) REFERENCES user(userID));""")
-            db.commit()
+        # SQL statement for creating the 'eventComment' table
+        create_event_comment_table = """
+        CREATE TABLE IF NOT EXISTS eventComment (
+            eventCommentID INT AUTO_INCREMENT PRIMARY KEY,
+            eventID INT NOT NULL,
+            userID INT NOT NULL,
+            comment TEXT NOT NULL,
+            FOREIGN KEY (eventID) REFERENCES event (eventID),
+            FOREIGN KEY (userID) REFERENCES user (userID)
+        );
+        """
+        self.cursor.execute(create_event_comment_table)
+
+        # Commit the changes to the database
+        self.database.commit()
+
+    def __del__(self):
+        # Close the database connection
+        self.cursor.close()
+        self.database.close()
+
+
+    def configure_button(self, button):
+        #curver border
+        button.configure(bg="#0078d4", fg="white", font=("Century Gothic", 12), relief="raised")
+        #button rounded border
+        button.configure(borderwidth=3, highlightthickness=3, width=20, height=1)
+
+
+
+
+    def configure_entry(self, entry_widget):
+        entry_widget.config(
+            font=("Arial", 12),  # Font and font size
+            bd=2,  # Border width
+            relief="ridge",  # Border style
+            fg="black",  # Text color
+            bg="white",  # Background color
+            selectbackground="lightblue",  # Background color when selected
+            selectforeground="black",  # Text color when selected
+            insertbackground="black",  # Cursor color
+            insertwidth=2,  # Cursor width
+            highlightcolor="blue",  # Highlight color when focused
+            highlightthickness=1,  # Highlight thickness
+            highlightbackground="black",  # Highlight background color
+            disabledbackground="lightgray",  # Background color when disabled
+            disabledforeground="gray"  # Text color when disabled
+        )
     
+    def configure_label(self, label_widget):
+        label_widget.config(
+            font=("Helvetica", 12),  # Font and font size
+            fg="black",  # Text color (foreground color)
+            bg="white",  # Background color
+            padx=5,  # Padding on the x-axis
+            pady=5,  # Padding on the y-axis
+            anchor="center",  # Text alignment (centered)
+        )
+
+
+
 
     def show_welcome_page(self):
-        self.tkn.geometry("800x500")
+        self.tkn.geometry("850x600")  # Slightly increase the height for a more dynamic look
+
+        #background color to white
+        self.tkn.configure(bg="white")
+
+
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
-        label = tkinter.Label(self.tkn, text="Welcome to Event Hub", font=("Helvetica", 20))
-        label.pack(pady=20)
 
-        info_label = tkinter.Label(self.tkn, text="Discover and attend exciting events in your area.",font=("Helvetica", 15, "italic", "bold"))
-        info_label.pack()
+        #welcome to event hub label
+        welcome_label = tkinter.Label(self.tkn, text="Welcome to Event Hub", font=("Helvetica", 20))
+        welcome_label.pack(pady=0)
+        #label background color to white
+        welcome_label.configure(bg="white")
 
-        main_page_button = tkinter.Button(self.tkn, text="Main Page", command=self.show_main_page)
-        main_page_button.pack(pady=20)
 
+        #display the image in images/welcome.jpg 900x600
+        welcome_image_path = Image.open("images/welcome.jpg")
+        welcome_image = ImageTk.PhotoImage(welcome_image_path)        
+        welcome_image_label = tkinter.Label(self.tkn, image=welcome_image)
+        welcome_image_label.photo = welcome_image
+        welcome_image_label.pack(pady=0)
+
+        #display text and button upon the image
+        #this happens after creating a frame and displaying the text and button on the frame
+        #welcome frame
+        welcome_frame = tkinter.Frame(self.tkn)
+        welcome_frame.pack(pady=10)
+
+
+        # introduce about the event hub
+        label = tkinter.Label(self.tkn, text="Event Hub is a platform for event organizers to create and promote their events, and for users to discover and register for events.", font=("Helvetica", 10))
+        label.configure(bg="white")
+        label.pack(pady=10)
+
+        #button to main page    
+        #let's get started button
+        get_started_button = tkinter.Button(self.tkn, text="Let's Get Started", command=self.show_main_page)
+        self.configure_button(get_started_button)
+        get_started_button.pack(pady=20)
+
+
+
+
+        
     def show_main_page(self):
-        self.tkn.geometry("500x500")
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
-        label = tkinter.Label(self.tkn, text="Main Page", font=("Helvetica", 20))
-        label.pack(pady=20)
+        # Create a frame for the main page content
+        main_frame = tkinter.Frame(self.tkn)
+        main_frame.configure(bg="white")
+        main_frame.pack(expand=True)
+
+        # Add a title label
+        title_label = tkinter.Label(main_frame, text="EVENT HUB", font=("Helvetica", 20))
+        title_label.configure(bg="white")
+        title_label.pack(pady=20)
+
+        # Create a grid for the buttons
+        button_frame = tkinter.Frame(main_frame)
+        button_frame.configure(bg="white")
+        button_frame.pack(expand=True)
 
         # Add buttons to navigate to different views
-        welcome_button = tkinter.Button(self.tkn, text="Welcome Page", command=self.show_welcome_page)
-        login_button = tkinter.Button(self.tkn, text="Login Page", command=self.show_login_page)
-        register_button = tkinter.Button(self.tkn, text="Register Page", command=self.show_register_page)
+        welcome_button = tkinter.Button(button_frame, text="Back to Welcome Page", command=self.show_welcome_page)
+        login_button = tkinter.Button(button_frame, text="Login", command=self.show_login_page)
+        register_button = tkinter.Button(button_frame, text="Register", command=self.show_register_page)
 
-        welcome_button.pack(pady=20)
-        login_button.pack(pady=10)
-        register_button.pack(pady=10)
+        # Configure button appearance
+        self.configure_button(welcome_button)
+        self.configure_button(login_button)
+        self.configure_button(register_button)
+
+        # Pack the buttons in a grid layout
+        welcome_button.grid(row=2, column=0, padx=10, pady=10)
+        login_button.grid(row=0, column=0, padx=10, pady=10)
+        register_button.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
 
 
     def show_login_page(self):
-        self.tkn.geometry("500x500")
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
         # Add login form elements
-        self.label = tkinter.Label(self.tkn, text="Login Page", font=("Helvetica", 20))
-        self.label.pack(pady=20)
-
-        # Email (Gmail ID) entry
-        self.email_label = tkinter.Label(self.tkn, text="Email (Gmail ID):")
-        self.email_label.pack()
-        self.email_entry = tkinter.Entry(self.tkn)
-        self.email_entry.pack()
-
-        # Password entry
-        self.password_label = tkinter.Label(self.tkn, text="Password:")
-        self.password_label.pack()
-        self.password_entry = tkinter.Entry(self.tkn)
-        self.password_entry.pack()
-
-        # Login button
-        self.login_button = tkinter.Button(self.tkn, text="Login",command=self.loginUser)
-        self.login_button.pack(pady=20)
-
-        # Register button
-        self.register_button = tkinter.Button(self.tkn, text="Register", command=self.registerUser)
-        self.register_button.pack(pady=10)
-
-        # Back button to return to the welcome page
-        self.back_button = tkinter.Button(self.tkn, text="Back to Welcome", command=self.show_welcome_page)
-        self.back_button.pack(pady=10)
-
-    def show_login_page(self):
-        self.tkn.geometry("500x500")
-        for widget in self.tkn.winfo_children():
-            widget.destroy()
-
-        # Add login form elements
-        label = tkinter.Label(self.tkn, text="Login Page", font=("Helvetica", 20))
+        label = tkinter.Label(self.tkn, text="Welcome to Login", font=("Helvetica", 20))
+        label.configure(bg="white")
         label.pack(pady=20)
 
         # Email (Gmail ID) entry
-        self.email_label = tkinter.Label(self.tkn, text="Email (Gmail ID):")
-        self.email_label.pack()
-        self.email_entry = tkinter.Entry(self.tkn)
+        self.email_entry = tkinter.Label(self.tkn, text="Enter Email ID :")
+        self.email_entry.configure(bg="white")
         self.email_entry.pack()
 
+        self.email_entry = tkinter.Entry(self.tkn)
+        self.configure_entry(self.email_entry)
+        self.email_entry.pack()
 
-        # Password entry
-        self.password_label = tkinter.Label(self.tkn, text="Password:")
-        self.password_label.pack()
-        self.password_entry = tkinter.Entry(self.tkn)
-        self.password_entry.pack()
+        # Send OTP button
+        self.send_otp_button = tkinter.Button(self.tkn, text="Send OTP", command=self.verifyUser)
+        self.configure_button(self.send_otp_button)  # Apply custom button styling
+        self.send_otp_button.pack(pady=20)
 
+        # Placeholder for OTP entry
+        self.otp_label = tkinter.Label(self.tkn, text="Enter OTP:")
+        self.otp_label.configure(bg="white")
+        self.otp_label.pack()
+        self.otp_entry = tkinter.Entry(self.tkn, state="disabled")  # Initially disabled
+        self.configure_entry(self.otp_entry)
+        self.otp_entry.pack()
 
-
-        # Login button
-        self.login_button = tkinter.Button(self.tkn, text="Login", command=self.loginUser)
+        # Login button (disabled until OTP is entered)
+        self.login_button = tkinter.Button(self.tkn, text="Login", command=self.loginUser, state="disabled")
+        self.configure_button(self.login_button)  # Apply custom button styling
         self.login_button.pack(pady=20)
 
         # Register button
         self.register_button = tkinter.Button(self.tkn, text="Register", command=self.show_register_page)
+        self.configure_button(self.register_button)  # Apply custom button styling
         self.register_button.pack(pady=10)
 
         # Back button to return to the welcome page
-        self.back_button=tkinter.Button(self.tkn, text="Back to Welcome", command=self.show_welcome_page)
+        self.back_button = tkinter.Button(self.tkn, text="Back to Welcome", command=self.show_welcome_page)
+        self.configure_button(self.back_button)  # Apply custom button styling
         self.back_button.pack(pady=10)
 
+
+
     def show_register_page(self):
-        self.tkn.geometry("500x500")
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
         # Add registration form elements
-        label = tkinter.Label(self.tkn, text="Register Page", font=("Helvetica", 20))
+        label = tkinter.Label(self.tkn, text="Register here for Event hub", font=("Helvetica", 20))
+        label.configure(bg="white")
         label.pack(pady=20)
 
         # First Name entry
         self.first_name_label = tkinter.Label(self.tkn, text="First Name:")
+        self.configure_label(self.first_name_label)
         self.first_name_label.pack()
         self.first_name_entry = tkinter.Entry(self.tkn)
+        self.configure_entry(self.first_name_entry)
         self.first_name_entry.pack()
 
         # Last Name entry
         self.last_name_label = tkinter.Label(self.tkn, text="Last Name:")
+        self.configure_label(self.last_name_label)
         self.last_name_label.pack()
         self.last_name_entry = tkinter.Entry(self.tkn)
+        self.configure_entry(self.last_name_entry)
         self.last_name_entry.pack()
 
-
         # Email (Gmail ID) entry
-        self.email_entry = tkinter.Label(self.tkn,text="Email (Gmail ID):")
+        self.email_entry = tkinter.Label(self.tkn, text="Email (Gmail ID):")
+        self.configure_label(self.email_entry)
         self.email_entry.pack()
         self.email_entry = tkinter.Entry(self.tkn)
+        self.configure_entry(self.email_entry)
         self.email_entry.pack()
 
         # Password entry
         self.password_label = tkinter.Label(self.tkn, text="Password:")
+        self.configure_label(self.password_label)
         self.password_label.pack()
-        self.password_entry = tkinter.Entry(self.tkn)
+        self.password_entry = tkinter.Entry(self.tkn,show="*")
+        self.configure_entry(self.password_entry)
         self.password_entry.pack()
 
         # Register button
         self.register_button = tkinter.Button(self.tkn, text="Register", command=self.registerUser)
+        self.configure_button(self.register_button)
         self.register_button.pack(pady=20)
-
 
         # Back button to return to the welcome page
         self.back_button = tkinter.Button(self.tkn, text="Back to Welcome", command=self.show_welcome_page)
+        self.configure_button(self.back_button)
         self.back_button.pack(pady=10)
 
     def show_admin_event_page(self):
@@ -261,8 +368,6 @@ class EventHub():
         self.back_button = tkinter.Button(self.tkn, text="Back to Welcome", command=self.show_welcome_page)
         self.back_button.pack(pady=10)
 
-
-
     def user_dashboard(self):
         self.tkn.geometry("800x500")
         for widget in self.tkn.winfo_children():
@@ -276,7 +381,6 @@ class EventHub():
         event_button = tkinter.Button(self.tkn, text="Register for Event", command=self.show_user_event_page)
         my_events_button = tkinter.Button(self.tkn, text="My Events", command=self.show_my_events_page)
         logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
-       
 
         event_button.pack(pady=20)
         my_events_button.pack(pady=10)
@@ -300,12 +404,18 @@ class EventHub():
         search_button.pack()
 
         # Create a Treeview widget to display events
-        self.event_tree = ttk.Treeview(self.tkn, columns=("Event Name", "Event Date", "Event Time", "Event Location", "Event Description"))
+        self.event_tree = ttk.Treeview(self.tkn, columns=(
+        "Event Name", "Event Date", "Event Time", "Event Location", "Event Description"), show="headings")
         self.event_tree.heading("#1", text="Event Name")
+        self.event_tree.column("#1", width=150)
         self.event_tree.heading("#2", text="Event Date")
+        self.event_tree.column("#2", width=150)
         self.event_tree.heading("#3", text="Event Time")
+        self.event_tree.column("#3", width=150)
         self.event_tree.heading("#4", text="Event Location")
+        self.event_tree.column("#4", width=150)
         self.event_tree.heading("#5", text="Event Description")
+        self.event_tree.column("#5", width=150)
 
         # Connect to the 'events.db' database and retrieve event data
         with sqlite3.connect("event.db") as db:
@@ -340,12 +450,18 @@ class EventHub():
         label.pack(pady=20)
 
         # Create a Treeview widget to display events
-        event_tree = ttk.Treeview(self.tkn, columns=("Event Name", "Event Date", "Event Time", "Event Location", "Event Description"))
+        event_tree = ttk.Treeview(self.tkn, columns=(
+        "Event Name", "Event Date", "Event Time", "Event Location", "Event Description"), show="headings")
         event_tree.heading("#1", text="Event Name")
+        event_tree.column("#1", width=150)
         event_tree.heading("#2", text="Event Date")
+        event_tree.column("#2", width=150)
         event_tree.heading("#3", text="Event Time")
+        event_tree.column("#3", width=150)
         event_tree.heading("#4", text="Event Location")
+        event_tree.column("#4", width=150)
         event_tree.heading("#5", text="Event Description")
+        event_tree.column("#5", width=150)
 
         # Get the user's email (you should have a way to fetch the user's email after login)
         user_email = self.current_user  # Replace with the actual user's email
@@ -390,17 +506,66 @@ class EventHub():
         back_button = ttk.Button(self.tkn, text="My Dashboard", command=self.user_dashboard)
         back_button.pack(pady=10)
 
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    def send_otp(self,gmail):
+        #generate a random 6-digit OTP
+        self.current_otp = random.randint(100000,999999)
+
+        #setting up server
+        server = smtplib.SMTP('smtp.gmail.com',587)
+        server.starttls()
+
+        password = "succyohrfxgyuhdv"
+        sendermail="santhoshvaraprasad.u@gmail.com"
+        #eventhub mail id
+        #sendermail = "bis698eventhub@gmailcom"
+        server.login(sendermail,password)
+
+        body = f"Your OTP is {self.current_otp}"
+        subject = "OTP verification for Eventhub"
+        message = f'subject:{subject}\n\n{body}'
+
+        try:
+            server.sendmail(sendermail,gmail,message)
+            #show message box otp sent
+            messagebox.showinfo("OTP Sent", "OTP has been sent to your email")
+        except Exception as e:
+            print(e)
+            messagebox.showerror("Error", "Unable to send OTP")
+
+        server.quit()
 
 
 
-    
+    def verifyUser(self):
+        #get the user's email
+        self.current_email = self.email_entry.get()
+
+        #check with the database if the email exists
+        query = "SELECT * FROM eventhub.user WHERE email = %s"
+        data = (self.current_email,)
+        try:
+            self.cursor.execute(query, data)
+            user = self.cursor.fetchone()
+        except mysql.Error as err:
+            messagebox.showerror("Error", f"MySQL Error: {err}")
+            return
+        
+        if user is not None:
+            #send OTP to the user's email
+            self.send_otp(self.current_email)
+        else:
+            messagebox.showerror("Error", "User not found")
+
+        self.otp_entry.configure(state="normal")
+        self.login_button.configure(state="normal")
 
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def register_for_event(self):
-    # Get the selected event
+        # Get the selected event
         selected_event = self.event_tree.focus()
 
         # Validate that an event was selected
@@ -412,33 +577,46 @@ class EventHub():
 
             # Get the user's email (you should have a way to fetch the user's email after login)
             user_email = self.current_user  # Replace with the actual user's email
-            # Connect to the 'user.db' database to retrieve the user's ID based on email
-            with sqlite3.connect("user.db") as user_db:
-                cursor = user_db.cursor()
-                cursor.execute("SELECT userID FROM user WHERE email=?", (user_email,))
-                user_id = cursor.fetchone()
 
-                if user_id:
-                    # Check if the user has already registered for this event
-                    with sqlite3.connect("eventRegistration.db") as registration_db:
-                        cursor = registration_db.cursor()
-                        cursor.execute("SELECT * FROM eventRegistration WHERE eventID=? AND userID=?", (event_data[0], user_id[0]))
-                        existing_registration = cursor.fetchone()
+            # Connect to the 'eventhub' database and retrieve the user's ID based on email
+            query = "SELECT userID FROM eventhub.user WHERE email = %s"
+            data = (user_email,)
 
-                    if existing_registration:
-                        messagebox.showinfo("Info", "You have already registered for this event.")
-                    else:
-                        # Connect to the 'eventRegistration.db' database and insert the event's data
-                        with sqlite3.connect("eventRegistration.db") as registration_db:
-                            cursor = registration_db.cursor()
-                            cursor.execute("""INSERT INTO eventRegistration(eventID, userID)
-                            VALUES(?,?)""", (event_data[0], user_id[0]))
-                            registration_db.commit()
+            try:
+                self.cursor.execute(query, data)
+                user_id = self.cursor.fetchone()
+            except mysql.Error as err:
+                messagebox.showerror("Error", f"MySQL Error: {err}")
+                return
+
+            if user_id:
+                # Check if the user has already registered for this event
+                query = "SELECT * FROM eventhub.eventRegistration WHERE eventID = %s AND userID = %s"
+                data = (event_data[0], user_id[0])
+
+                try:
+                    self.cursor.execute(query, data)
+                    existing_registration = self.cursor.fetchone()
+                except mysql.Error as err:
+                    messagebox.showerror("Error", f"MySQL Error: {err}")
+                    return
+
+                if existing_registration:
+                    messagebox.showinfo("Info", "You have already registered for this event.")
+                else:
+                    # Connect to the 'eventRegistration' database and insert the event's data
+                    query = "INSERT INTO eventhub.eventRegistration(eventID, userID) VALUES (%s, %s)"
+                    data = (event_data[0], user_id[0])
+
+                    try:
+                        self.cursor.execute(query, data)
+                        self.database.commit()
                         messagebox.showinfo("Success", "You have registered for the event successfully!")
                         self.user_dashboard()
-                else:
-                    messagebox.showerror("Error", "User not found")
-
+                    except mysql.Error as err:
+                        messagebox.showerror("Error", f"MySQL Error: {err}")
+            else:
+                messagebox.showerror("Error", "User not found")
 
 
     def search_events(self):
@@ -449,11 +627,16 @@ class EventHub():
         if search == "":
             messagebox.showerror("Error", "Please enter a search term")
         else:
-            # Connect to the 'events.db' database and retrieve event data
-            with sqlite3.connect("events.db") as db:
-                cursor = db.cursor()
-                cursor.execute("SELECT * FROM event WHERE eventName LIKE ?", (search,))
-                events = cursor.fetchall()
+            # Connect to the 'eventhub' database and retrieve event data
+            query = "SELECT * FROM eventhub.event WHERE eventName LIKE %s"
+            data = (f"%{search}%",)
+
+            try:
+                self.cursor.execute(query, data)
+                events = self.cursor.fetchall()
+            except mysql.Error as err:
+                messagebox.showerror("Error", f"MySQL Error: {err}")
+                return
 
             # Populate the Treeview with event data
             for event in events:
@@ -472,38 +655,36 @@ class EventHub():
             messagebox.showerror("Error", "Please fill in all fields")
         else:
             # Insert the user's input into the database
-            with sqlite3.connect("user.db") as db:
-                cursor = db.cursor()
-                cursor.execute("""INSERT INTO user(firstName, lastName, email, password)
-                VALUES(?,?,?,?)""", (firstName, lastName, email, password))
-                db.commit()
-            messagebox.showinfo("Success", "You have registered successfully!")
-            self.show_login_page()
+            query = "INSERT INTO eventhub.user(firstName, lastName, email, password) VALUES (%s, %s, %s, %s)"
+            data = (firstName, lastName, email, password)
+
+            try:
+                self.cursor.execute(query, data)
+                self.database.commit()
+                messagebox.showinfo("Success", "You have registered successfully!")
+                self.show_login_page()
+            except mysql.Error as err:
+                messagebox.showerror("Error", f"MySQL Error: {err}")
 
     def loginUser(self):
-        # Get the user's input
-        email = self.email_entry.get()
-        password = self.password_entry.get()
-
-        self.current_user = email
-
+        # Get the user otp
+        otp = int(self.otp_entry.get())
+    
         # Validate the user's input
-        if email == "" or password == "":
-            messagebox.showerror("Error", "Please fill in all fields")
+        if otp == "" :
+            messagebox.showerror("Error", "Please fill in otp sent to mail")
         else:
-            # Check if the user's input matches the database
-            with sqlite3.connect("user.db") as db:
-                cursor = db.cursor()
-                cursor.execute("SELECT * FROM user WHERE email=? AND password=?", (email, password))
-                user = cursor.fetchone()
-                if user is not None:
-                    messagebox.showinfo("Success", "You have logged in successfully!")
-                    if email == "admin":
-                        self.show_admin_event_page()
-                    else:
-                        self.user_dashboard()
+            # Connect to the 'eventhub' database and retrieve event data
+            if otp == self.current_otp:
+                messagebox.showinfo("Success", "You have logged in successfully!")
+                if self.current_email == "admin":
+                    self.show_admin_event_page()
                 else:
-                    messagebox.showerror("Error", "Invalid email or password")
+                    self.user_dashboard()
+            else:
+                messagebox.showerror("Error", "Invalid otp. Click on send otp again")
+
+
 
     def registerEvent(self):
         # Get the user's input
@@ -525,13 +706,9 @@ class EventHub():
                 db.commit()
             messagebox.showinfo("Success", "You have registered successfully!")
             self.show_event_page()
-        
-    
-
-#-----------------------------------------------------------------------------------------------------------------------
 
 
-
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 if __name__ == "__main__":
