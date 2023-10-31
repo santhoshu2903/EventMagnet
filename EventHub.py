@@ -1,11 +1,11 @@
 import tkinter
 from tkinter import messagebox
 import tkinter.ttk as ttk
-import sqlite3
 from PIL import ImageTk, Image
 import mysql.connector as mysql
 import random
 import smtplib
+from tkcalendar import Calendar, DateEntry
 
 class EventHub():
     def __init__(self):
@@ -102,7 +102,7 @@ class EventHub():
 
     def configure_button(self, button):
         #curver border
-        button.configure(bg="#0078d4", fg="white", font=("Century Gothic", 12), relief="raised")
+        button.configure(bg="#0078d4", fg="white", font=("Verdana", 12), relief="raised")
         #button rounded border
         button.configure(borderwidth=3, highlightthickness=3, width=20, height=1)
 
@@ -321,134 +321,25 @@ class EventHub():
         self.configure_button(self.back_button)
         self.back_button.pack(pady=10)
 
-    def show_admin_event_page(self):
-        self.tkn.geometry("800x500")
+
+    def admin_dashboard(self):
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
-        # Add event form elements
-        label = tkinter.Label(self.tkn, text="Admin Event Page", font=("Helvetica", 20))
+        # Add admin dashboard elements
+        label = tkinter.Label(self.tkn, text="Admin Dashboard", font=("Helvetica", 20))
+        label.configure(bg="white")
         label.pack(pady=20)
 
-        # Event Name entry
-        self.event_name_label = tkinter.Label(self.tkn, text="Event Name:")
-        self.event_name_label.pack()
-        self.event_name_entry = tkinter.Entry(self.tkn)
-        self.event_name_entry.pack()
-
-        # Event Date entry
-        self.event_date_label = tkinter.Label(self.tkn, text="Event Date:")
-        self.event_date_label.pack()
-        self.event_date_entry = tkinter.Entry(self.tkn)
-        self.event_date_entry.pack()
-
-        # Event Time entry
-        self.event_time_label = tkinter.Label(self.tkn, text="Event Time:")
-        self.event_time_label.pack()
-        self.event_time_entry = tkinter.Entry(self.tkn)
-        self.event_time_entry.pack()
-
-        # Event Location entry
-        self.event_location_label = tkinter.Label(self.tkn, text="Event Location:")
-        self.event_location_label.pack()
-        self.event_location_entry = tkinter.Entry(self.tkn)
-        self.event_location_entry.pack()
-
-        # Event Description entry
-        self.event_description_label = tkinter.Label(self.tkn, text="Event Description:")
-        self.event_description_label.pack()
-        self.event_description_entry = tkinter.Entry(self.tkn)
-        self.event_description_entry.pack()
-
-        # Register button
-        self.register_button = tkinter.Button(self.tkn, text="Register", command=self.registerEvent)
-        self.register_button.pack(pady=20)
-
-        # Back button to return to the welcome page
-        self.back_button = tkinter.Button(self.tkn, text="Back to Welcome", command=self.show_welcome_page)
-        self.back_button.pack(pady=10)
-
-    def user_dashboard(self):
-        self.tkn.geometry("800x500")
-        for widget in self.tkn.winfo_children():
-            widget.destroy()
-
-        # Add user dashboard elements
-        label = tkinter.Label(self.tkn, text="User Dashboard", font=("Helvetica", 20))
-        label.pack(pady=20)
-
-        # Add buttons to navigate to different views
-        event_button = tkinter.Button(self.tkn, text="Register for Event", command=self.show_user_event_page)
-        my_events_button = tkinter.Button(self.tkn, text="My Events", command=self.show_my_events_page)
-        logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
-
-        event_button.pack(pady=20)
-        my_events_button.pack(pady=10)
-        logout_button.pack(pady=10)
-
-    def show_user_event_page(self):
-        self.tkn.geometry("800x500")
-        for widget in self.tkn.winfo_children():
-            widget.destroy()
-
-        # Add user event page elements
-        label = ttk.Label(self.tkn, text="User Event Page", font=("Helvetica", 20))
-        label.pack(pady=20)
-
-        # Search box
-        search_label = ttk.Label(self.tkn, text="Search Events:")
+        #search bar to search events from treeview
+        search_label = tkinter.Label(self.tkn, text="Search Event Name :")
+        self.configure_label(search_label)
         search_label.pack()
-        self.search_entry = ttk.Entry(self.tkn)
+        self.search_entry = tkinter.Entry(self.tkn)
+        self.configure_entry(self.search_entry)
         self.search_entry.pack()
-        search_button = ttk.Button(self.tkn, text="Search", command=self.search_events)
-        search_button.pack()
 
-        # Create a Treeview widget to display events
-        self.event_tree = ttk.Treeview(self.tkn, columns=(
-        "Event Name", "Event Date", "Event Time", "Event Location", "Event Description"), show="headings")
-        self.event_tree.heading("#1", text="Event Name")
-        self.event_tree.column("#1", width=150)
-        self.event_tree.heading("#2", text="Event Date")
-        self.event_tree.column("#2", width=150)
-        self.event_tree.heading("#3", text="Event Time")
-        self.event_tree.column("#3", width=150)
-        self.event_tree.heading("#4", text="Event Location")
-        self.event_tree.column("#4", width=150)
-        self.event_tree.heading("#5", text="Event Description")
-        self.event_tree.column("#5", width=150)
-
-        # Connect to the 'events.db' database and retrieve event data
-        with sqlite3.connect("event.db") as db:
-            cursor = db.cursor()
-            cursor.execute("SELECT * FROM event")
-            events = cursor.fetchall()
-
-        # Populate the Treeview with event data
-        for event in events:
-            self.event_tree.insert("", "end", values=event)
-
-        self.event_tree.pack()
-
-        # Register button to register for selected event
-        register_button = ttk.Button(self.tkn, text="Register for Event", command=self.register_for_event)
-        register_button.pack(pady=10)
-
-        user_dashboard_button = ttk.Button(self.tkn, text="My Dashboard", command=self.user_dashboard)
-        user_dashboard_button.pack(pady=10)
-
-        # Back button to return to the main page
-        back_button = ttk.Button(self.tkn, text="Logout", command=self.show_main_page)
-        back_button.pack(pady=10)
-
-    def show_my_events_page(self):
-        self.tkn.geometry("800x500")
-        for widget in self.tkn.winfo_children():
-            widget.destroy()
-
-        # Add my events page elements
-        label = ttk.Label(self.tkn, text="My Events", font=("Helvetica", 20))
-        label.pack(pady=20)
-
+        #treeview of events 
         # Create a Treeview widget to display events
         event_tree = ttk.Treeview(self.tkn, columns=(
         "Event Name", "Event Date", "Event Time", "Event Location", "Event Description"), show="headings")
@@ -463,38 +354,147 @@ class EventHub():
         event_tree.heading("#5", text="Event Description")
         event_tree.column("#5", width=150)
 
+        # Connect to the 'events.db' database and retrieve event data from mysql   
+        query = "SELECT * FROM eventhub.event"
+        try:
+            self.cursor.execute(query)
+            events = self.cursor.fetchall()
+        except mysql.Error as err:
+            messagebox.showerror("Error", f"MySQL Error: {err}")
+            return
+        
+        # Populate the Treeview with event data
+        for event in events:
+            event_tree.insert("", "end", values=event)
+        
+        event_tree.pack()
+
+        # Add buttons to navigate to different views
+        event_button = tkinter.Button(self.tkn, text="Add Event", command=self.show_admin_event_page)
+        self.configure_button(event_button)
+        event_button.pack(pady=20)
+
+        logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
+        self.configure_button(logout_button)
+        logout_button.pack(pady=10)
+
+
+        
+    def show_admin_event_page(self):
+        self.tkn.geometry("800x500")
+        for widget in self.tkn.winfo_children():
+            widget.destroy()
+
+        # Add event form elements
+        label = tkinter.Label(self.tkn, text="Admin Event Page", font=("Helvetica", 20))
+        label.configure(bg="white")
+        label.pack(pady=20)
+
+        # Event Name entry
+        self.event_name_label = tkinter.Label(self.tkn, text="Event Name:")
+        self.configure_label(self.event_name_label)
+        self.event_name_label.pack()
+
+        self.event_name_entry = tkinter.Entry(self.tkn)
+        self.configure_entry(self.event_name_entry)
+        self.event_name_entry.pack()
+
+        # Event Date entry
+        self.event_date_label = tkinter.Label(self.tkn, text="Event Date:")
+        self.configure_label(self.event_date_label)
+        self.event_date_label.pack()
+        self.event_date_entry = DateEntry(self.tkn,width=15,background="darkblue", foreground="white", date_pattern="MM/dd/yyyy", font=("Arial", 15))
+        # self.configure_entry(self.event_date_entry)
+        self.event_date_entry.pack()
+
+        # Event Time entry
+        self.event_time_label = tkinter.Label(self.tkn, text="Event Time: HH:MM AM/PM")
+        self.configure_label(self.event_time_label)
+        self.event_time_label.pack()
+        self.event_time_entry = tkinter.Entry(self.tkn)
+        self.configure_entry(self.event_time_entry)
+        self.event_time_entry.pack()
+
+        # Event Location entry
+        self.event_location_label = tkinter.Label(self.tkn, text="Event Location:")
+        self.configure_label(self.event_location_label)
+        self.event_location_label.pack()
+        self.event_location_entry = tkinter.Entry(self.tkn)
+        self.configure_entry(self.event_location_entry)
+        self.event_location_entry.pack()
+
+        # Event Description entry
+        self.event_description_label = tkinter.Label(self.tkn, text="Event Description:")
+        self.configure_label(self.event_description_label)
+        self.event_description_label.pack()
+        self.event_description_entry = tkinter.Entry(self.tkn)
+        self.configure_entry(self.event_description_entry)
+        self.event_description_entry.pack()
+
+        # Register button
+        self.register_button = tkinter.Button(self.tkn, text="Register", command=self.registerEvent)
+        self.configure_button(self.register_button)
+        self.register_button.pack(pady=10)
+
+        #back to admin dashboard button
+        self.back_button = tkinter.Button(self.tkn, text="Back to Admin Dashboard", command=self.admin_dashboard)
+        self.configure_button(self.back_button)
+        self.back_button.pack(pady=10)
+
+
+    def user_dashboard(self):
+        for widget in self.tkn.winfo_children():
+            widget.destroy()
+
+        # Add user dashboard elements
+        label = tkinter.Label(self.tkn, text="User Dashboard", font=("Helvetica", 20))
+        label.configure(bg="white")
+        label.pack(pady=20)
+
+        # Add buttons to navigate to different views
+        event_button = tkinter.Button(self.tkn, text="Register for Event", command=self.show_user_event_page)
+        self.configure_button(event_button)
+        event_button.pack(pady=20)
+
+        #create treeview of events registered by user
+        # Create a Treeview widget to display events
+        event_tree = ttk.Treeview(self.tkn, columns=(
+            "Event Name", "Event Date", "Event Time", "Event Location", "Event Description"), show="headings")
+        event_tree.heading("#1", text="Event Name")
+        event_tree.column("#1", width=150)
+        event_tree.heading("#2", text="Event Date")
+        event_tree.column("#2", width=150)
+        event_tree.heading("#3", text="Event Time")
+        event_tree.column("#3", width=150)
+        event_tree.heading("#4", text="Event Location")
+        event_tree.column("#4", width=150)
+        event_tree.heading("#5", text="Event Description")
+        event_tree.column("#5", width=150)
+
         # Get the user's email (you should have a way to fetch the user's email after login)
-        user_email = self.current_user  # Replace with the actual user's email
+        user_email = self.current_email
 
-        # Connect to the 'eventRegistration.db' database
-        with sqlite3.connect("eventRegistration.db") as registration_db:
-            cursor = registration_db.cursor()
-
-            # Connect to the 'user.db' database to retrieve user-related information
-            with sqlite3.connect("user.db") as user_db:
-                user_cursor = user_db.cursor()
-
-                # Query the user table in 'user.db' to get the userID based on email
-                user_cursor.execute("SELECT userID FROM user WHERE email=?", (user_email,))
-                user_id = user_cursor.fetchone()
-
+        # Connect to the MySQL database
+        with self.database.cursor() as cursor:
+                # Query the user table in MySQL to get the userID based on email
+                cursor.execute("SELECT userID FROM eventhub.user WHERE email=%s", (user_email,))
+                user_id = cursor.fetchone()
+    
                 if user_id:
-                    # Query the eventRegistration table in 'eventRegistration.db' to get eventIDs associated with the user
-                    cursor.execute("SELECT eventID FROM eventRegistration WHERE userID=?", (user_id[0],))
+                    # Query the eventRegistration table in MySQL to get eventIDs associated with the user
+                    cursor.execute("SELECT eventID FROM eventhub.eventRegistration WHERE userID=%s", (user_id[0],))
                     event_ids = cursor.fetchall()
                 else:
                     event_ids = []
 
-        # Connect to the 'event.db' database
-        with sqlite3.connect("event.db") as event_db:
-            cursor = event_db.cursor()
-
-            # Retrieve event data for the user's registered events
-            events = []
-            for event_id in event_ids:
-                cursor.execute("SELECT * FROM event WHERE eventID=?", event_id)
-                event_data = cursor.fetchone()
-                events.append(event_data)
+        # Connect to the MySQL database
+        with self.database.cursor() as cursor:
+                # Retrieve event data for the user's registered events
+                events = []
+                for event_id in event_ids:
+                    cursor.execute("SELECT * FROM eventhub.event WHERE eventID=%s", event_id)
+                    event_data = cursor.fetchone()
+                    events.append(event_data)
 
         # Populate the Treeview with events registered by the user
         for event in events:
@@ -502,11 +502,76 @@ class EventHub():
 
         event_tree.pack()
 
+        logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
+        self.configure_button(logout_button)
+        logout_button.pack(pady=10)
+
+
+    def show_user_event_page(self):
+        for widget in self.tkn.winfo_children():
+            widget.destroy()
+
+        # Add user event page elements
+        label = tkinter.Label(self.tkn, text="User Event Page", font=("Helvetica", 20))
+        label.configure(bg="white") 
+        label.grid(row=0, column=0, columnspan=2, pady=20)
+
+        # Search box
+        search_label = tkinter.Label(self.tkn, text="Search Events:")
+        self.configure_label(search_label)
+        search_label.grid(row=1, column=0, pady=10)
+        self.search_entry = tkinter.Entry(self.tkn)
+        self.configure_entry(self.search_entry)
+        self.search_entry.grid(row=1, column=1, pady=10)
+        search_button = tkinter.Button(self.tkn, text="Search", command=self.search_events)
+        self.configure_button(search_button)
+        search_button.grid(row=1, column=2, pady=10)
+
+        # Create a Treeview widget to display events
+        self.event_tree = ttk.Treeview(self.tkn, columns=(
+            "Event Name", "Event Date", "Event Time", "Event Location", "Event Description"), show="headings")
+        self.event_tree.heading("#1", text="Event Name")
+        self.event_tree.column("#1", width=150)
+        self.event_tree.heading("#2", text="Event Date")
+        self.event_tree.column("#2", width=150)
+        self.event_tree.heading("#3", text="Event Time")
+        self.event_tree.column("#3", width=150)
+        self.event_tree.heading("#4", text="Event Location")
+        self.event_tree.column("#4", width=150)
+        self.event_tree.heading("#5", text="Event Description")
+        self.event_tree.column("#5", width=150)
+
+        # Connect to the MySQL database
+        with self.database.cursor() as cursor:
+            # Retrieve event data from the 'event' table in MySQL
+            cursor.execute("SELECT * FROM eventhub.event")
+            events = cursor.fetchall()
+
+        # Populate the Treeview with event data
+        for event in events:
+            self.event_tree.insert("", "end", values=event)
+
+        self.event_tree.grid(row=2, column=0, columnspan=3, padx=30,pady=10,sticky="nsew")
+
+        # Register button to register for selected event
+        register_button = tkinter.Button(self.tkn, text="Register", command=self.register_for_event)
+        self.configure_button(register_button)
+        register_button.grid(row=3, column=0, pady=10)
+
+        user_dashboard_button = tkinter.Button(self.tkn, text="My Dashboard", command=self.user_dashboard)
+        self.configure_button(user_dashboard_button)
+        user_dashboard_button.grid(row=3, column=1, pady=10)
+
         # Back button to return to the main page
-        back_button = ttk.Button(self.tkn, text="My Dashboard", command=self.user_dashboard)
-        back_button.pack(pady=10)
+        back_button = tkinter.Button(self.tkn, text="Logout", command=self.show_main_page)
+        self.configure_button(back_button)
+        back_button.grid(row=3, column=2, pady=10)
+
+
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 
     def send_otp(self,gmail):
         #generate a random 6-digit OTP
@@ -542,6 +607,17 @@ class EventHub():
         #get the user's email
         self.current_email = self.email_entry.get()
 
+        if self.current_email == "admin":
+            self.admin_dashboard()
+            #welcome to admin page message box
+            messagebox.showinfo("Welcome", "Welcome Admin")
+            return
+        if self.current_email == "user":
+            self.user_dashboard()
+            #welcome to user page message box
+            messagebox.showinfo("Welcome", "Welcome User")
+            return
+
         #check with the database if the email exists
         query = "SELECT * FROM eventhub.user WHERE email = %s"
         data = (self.current_email,)
@@ -576,7 +652,7 @@ class EventHub():
             event_data = self.event_tree.item(selected_event, "values")
 
             # Get the user's email (you should have a way to fetch the user's email after login)
-            user_email = self.current_user  # Replace with the actual user's email
+            user_email = self.current_email  # Replace with the actual user's email
 
             # Connect to the 'eventhub' database and retrieve the user's ID based on email
             query = "SELECT userID FROM eventhub.user WHERE email = %s"
@@ -677,10 +753,7 @@ class EventHub():
             # Connect to the 'eventhub' database and retrieve event data
             if otp == self.current_otp:
                 messagebox.showinfo("Success", "You have logged in successfully!")
-                if self.current_email == "admin":
-                    self.show_admin_event_page()
-                else:
-                    self.user_dashboard()
+                self.user_dashboard()
             else:
                 messagebox.showerror("Error", "Invalid otp. Click on send otp again")
 
@@ -699,13 +772,16 @@ class EventHub():
             messagebox.showerror("Error", "Please fill in all fields")
         else:
             # Insert the user's input into the database
-            with sqlite3.connect("event.db") as db:
-                cursor = db.cursor()
-                cursor.execute("""INSERT INTO event(eventName, eventDate, eventTime, eventLocation, eventDescription)
-                VALUES(?,?,?,?,?)""", (eventName, eventDate, eventTime, eventLocation, eventDescription))
-                db.commit()
+            query = """INSERT INTO eventhub.event(eventName, eventDate, eventTime, eventLocation, eventDescription)
+                    VALUES(%s, %s, %s, %s, %s)"""
+            values = (eventName, eventDate, eventTime, eventLocation, eventDescription)
+
+            self.cursor.execute(query, values)
+            self.database.commit()
+
             messagebox.showinfo("Success", "You have registered successfully!")
-            self.show_event_page()
+            self.admin_dashboard()
+
 
 
 # -----------------------------------------------------------------------------------------------------------------------
