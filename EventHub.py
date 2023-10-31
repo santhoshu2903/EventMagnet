@@ -497,6 +497,7 @@ class EventHub():
                     events.append(event_data)
 
         # Populate the Treeview with events registered by the user
+        #testing
         for event in events:
             event_tree.insert("", "end", values=event)
 
