@@ -582,10 +582,8 @@ class EventHub():
         server = smtplib.SMTP('smtp.gmail.com',587)
         server.starttls()
 
-        password = "succyohrfxgyuhdv"
-        sendermail="santhoshvaraprasad.u@gmail.com"
-        #eventhub mail id
-        #sendermail = "bis698eventhub@gmailcom"
+        password = "ecyvohyivtvbawwy"
+        sendermail = "bis698eventhub@gmail.com"
         server.login(sendermail,password)
 
         body = f"Your OTP is {self.current_otp}"
