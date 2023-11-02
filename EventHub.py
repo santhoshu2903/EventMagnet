@@ -96,7 +96,7 @@ class EventHub():
 
     def __del__(self):
         # Close the database connection
-        self.cursor.close()
+        # self.cursor.close()
         self.database.close()
 
 
@@ -105,8 +105,6 @@ class EventHub():
         button.configure(bg="#0078d4", fg="white", font=("Verdana", 12), relief="raised")
         #button rounded border
         button.configure(borderwidth=3, highlightthickness=3, width=20, height=1)
-
-
 
 
     def configure_entry(self, entry_widget):
@@ -486,6 +484,8 @@ class EventHub():
                     event_ids = cursor.fetchall()
                 else:
                     event_ids = []
+                
+                cursor.close()
 
         # Connect to the MySQL database
         with self.database.cursor() as cursor:
@@ -495,6 +495,8 @@ class EventHub():
                     cursor.execute("SELECT * FROM eventhub.event WHERE eventID=%s", event_id)
                     event_data = cursor.fetchone()
                     events.append(event_data)
+
+                cursor.close()
 
         # Populate the Treeview with events registered by the user
         #testing
