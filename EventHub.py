@@ -15,10 +15,10 @@ class EventHub():
         self.tkn.geometry("800x500")
         self.show_welcome_page()
 
-
+        
         database = {
             'user': 'root',
-            'password': 'root',
+            'password': 'Lucky',
             'host': 'localhost',
             'port': 3306,
             'database': 'eventhub'
@@ -100,12 +100,12 @@ class EventHub():
         self.database.close()
 
 
+
     def configure_button(self, button):
         #curver border
         button.configure(bg="#0078d4", fg="white", font=("Verdana", 12), relief="raised")
         #button rounded border
         button.configure(borderwidth=3, highlightthickness=3, width=20, height=1)
-
 
 
 
