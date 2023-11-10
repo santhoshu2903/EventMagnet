@@ -7,6 +7,7 @@ import random
 import smtplib
 from tkcalendar import Calendar, DateEntry
 import sv_ttk
+from fpdf import FPDF
 
 class EventHub():
     def __init__(self):
@@ -558,6 +559,7 @@ class EventHub():
         event_tree.heading("#3", text="User Phone")
         event_tree.column("#3", width=150, anchor="center")
 
+        print(org_page_current_event)
 
         #get users id that are registered to the event and then get their details
         # Connect to the MySQL database
@@ -575,6 +577,7 @@ class EventHub():
                 
                 cursor.close()
             
+        print(user_ids)
         # Connect to the MySQL database
         with self.database.cursor() as cursor:
                 # Retrieve user data for the users registered to the event
@@ -674,6 +677,26 @@ class EventHub():
         label = tkinter.Label(self.tkn, text="Admin Dashboard", font=("Helvetica", 20))
         label.configure(bg="white")
         label.pack(pady=20)
+
+        #button to get pdf of all the events
+        get_pdf_button = tkinter.Button(self.tkn, text="Get PDF of all the events", command=self.events_report_pdf)
+        self.configure_button(get_pdf_button)
+        get_pdf_button.pack(pady=20)
+
+        #button to get pdf of all the users
+        get_pdf_button = tkinter.Button(self.tkn, text="Get PDF of all the users", command=self.users_report_pdf)
+        self.configure_button(get_pdf_button)
+        get_pdf_button.pack(pady=20)
+
+        #button to get pdf of all the organizers
+        get_pdf_button = tkinter.Button(self.tkn, text="Get PDF of all the organizers", command=self.organizers_report_pdf)
+        self.configure_button(get_pdf_button)
+        get_pdf_button.pack(pady=20)
+
+        #button to get pdf of all the event registrations
+        get_pdf_button = tkinter.Button(self.tkn, text="Get PDF of all the event registrations", command=self.event_registrations_report_pdf)
+        self.configure_button(get_pdf_button)
+        get_pdf_button.pack(pady=20)
 
         logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
         self.configure_button(logout_button)
@@ -1213,6 +1236,168 @@ class EventHub():
             else:
                 messagebox.showerror("Error", "Invalid otp. Click on send otp again")
 
+    #events_report_pdf
+    def events_report_pdf(self):
+        # Connect to the 'eventhub' database and retrieve event data
+        query = "SELECT * FROM eventhub.event"
+        try:
+            self.cursor.execute(query)
+            events = self.cursor.fetchall()
+        except mysql.Error as err:
+            messagebox.showerror("Error", f"MySQL Error: {err}")
+            return
+
+        # Create a PDF document
+        pdf = FPDF()
+        pdf.add_page()
+
+        # Add a title to the page
+        pdf.set_font("Arial", size=20)
+        pdf.cell(200, 10, txt="Events Report", ln=1, align="C")
+
+        # Add a header to the table
+        pdf.set_font("Arial", size=12)
+        pdf.cell(30, 10, txt="Event Name", border=1)
+        pdf.cell(30, 10, txt="Event Date", border=1)
+        pdf.cell(30, 10, txt="Event Time", border=1)
+        pdf.cell(30, 10, txt="Event Location", border=1)
+        pdf.cell(30, 10, txt="Event Description", border=1)
+        pdf.cell(30, 10, txt="Registered Count", border=1)
+        pdf.ln()
+
+        # Add event data to the table
+        for event in events:
+            pdf.cell(30, 10, txt=str(event[1]), border=1)
+            pdf.cell(30, 10, txt=event[2], border=1)
+            pdf.cell(30, 10, txt=event[3], border=1)
+            pdf.cell(30, 10, txt=event[4], border=1)
+            pdf.cell(30, 10, txt=event[6], border=1)
+            pdf.cell(30, 10, txt=str(event[7]), border=1)
+            pdf.ln()
+
+        # Save the PDF document
+        pdf.output("events_report.pdf")
+
+        messagebox.showinfo("Success", "Events report generated successfully!")
+
+    #users_report_pdf
+    def users_report_pdf(self):
+        # Connect to the 'eventhub' database and retrieve user data
+        query = "SELECT * FROM eventhub.user"
+        try:
+            self.cursor.execute(query)
+            users = self.cursor.fetchall()
+        except mysql.Error as err:
+            messagebox.showerror("Error", f"MySQL Error: {err}")
+            return
+
+        # Create a PDF document
+        pdf = FPDF()
+        pdf.add_page()
+
+        # Add a title to the page
+        pdf.set_font("Arial", size=20)
+        pdf.cell(200, 10, txt="Users Report", ln=1, align="C")
+
+        # Add a header to the table
+        pdf.set_font("Arial", size=12)
+        pdf.cell(30, 10, txt="First Name", border=1)
+        pdf.cell(30, 10, txt="Last Name", border=1)
+        pdf.cell(30, 10, txt="Email", border=1)
+        pdf.cell(30, 10, txt="Phone", border=1)
+        pdf.ln()
+
+        # Add user data to the table
+        for user in users:
+            pdf.cell(30, 10, txt=user[1], border=1)
+            pdf.cell(30, 10, txt=user[2], border=1)
+            pdf.cell(30, 10, txt=user[3], border=1)
+            pdf.cell(30, 10, txt=user[5], border=1)
+            pdf.ln()
+
+        # Save the PDF document
+        pdf.output("users_report.pdf")
+
+        messagebox.showinfo("Success", "Users report generated successfully!")
+
+    #organizers_report_pdf
+    def organizers_report_pdf(self):
+        # Connect to the 'eventhub' database and retrieve organizer data
+        query = "SELECT * FROM eventhub.organizer"
+        try:
+            self.cursor.execute(query)
+            organizers = self.cursor.fetchall()
+        except mysql.Error as err:
+            messagebox.showerror("Error", f"MySQL Error: {err}")
+            return
+
+        # Create a PDF document
+        pdf = FPDF()
+        pdf.add_page()
+
+        # Add a title to the page
+        pdf.set_font("Arial", size=20)
+        pdf.cell(200, 10, txt="Organizers Report", ln=1, align="C")
+
+        # Add a header to the table
+        pdf.set_font("Arial", size=12)
+        pdf.cell(30, 10, txt="Organizer Name", border=1)
+        pdf.cell(30, 10, txt="Organization Email", border=1)
+        pdf.cell(30, 10, txt="Organizer Phone", border=1)
+        pdf.cell(30, 10, txt="Organization Name", border=1)
+        pdf.ln()
+
+        # Add organizer data to the table
+        for organizer in organizers:
+            pdf.cell(30, 10, txt=organizer[1], border=1)
+            pdf.cell(30, 10, txt=organizer[2], border=1)
+            pdf.cell(30, 10, txt=organizer[3], border=1)
+            pdf.cell(30, 10, txt=organizer[4], border=1)
+            pdf.ln()
+
+        # Save the PDF document
+        pdf.output("organizers_report.pdf")
+
+        messagebox.showinfo("Success", "Organizers report generated successfully!")
+    
+    #event_registrations_report_pdf
+    def event_registrations_report_pdf(self):
+        # Connect to the 'eventhub' database and retrieve event registration data
+        query = "SELECT * FROM eventhub.eventRegistration"
+        try:
+            self.cursor.execute(query)
+            event_registrations = self.cursor.fetchall()
+        except mysql.Error as err:
+            messagebox.showerror("Error", f"MySQL Error: {err}")
+            return
+
+        # Create a PDF document
+        pdf = FPDF()
+        pdf.add_page()
+
+        # Add a title to the page
+        pdf.set_font("Arial", size=20)
+        pdf.cell(200, 10, txt="Event Registrations Report", ln=1, align="C")
+
+        # Add a header to the table
+        pdf.set_font("Arial", size=12)
+        pdf.cell(30, 10, txt="Event ID", border=1)
+        pdf.cell(30, 10, txt="User ID", border=1)
+        pdf.cell(30, 10, txt="Organizer ID", border=1)
+        pdf.ln()
+
+        # Add event registration data to the table
+        for event_registration in event_registrations:
+            pdf.cell(30, 10, txt=str(event_registration[0]), border=1)
+            pdf.cell(30, 10, txt=str(event_registration[1]), border=1)
+            pdf.cell(30, 10, txt=str(event_registration[2]), border=1)
+            pdf.ln()
+
+        # Save the PDF document
+        pdf.output("event_registrations_report.pdf")
+
+        messagebox.showinfo("Success", "Event registrations report generated successfully!")
+
 
     #sendEmailConfirmation
     def sendEmailConfirmation(self,user_email,event_data):
@@ -1275,5 +1460,7 @@ class EventHub():
 
 
 if __name__ == "__main__":
+
+
     app = EventHub()
     app.tkn.mainloop()
