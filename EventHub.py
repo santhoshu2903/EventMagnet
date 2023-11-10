@@ -25,7 +25,7 @@ class EventHub():
         
         database = {
             'user': 'root',
-            'password': 'Lucky',
+            'password': 'root',
             'host': 'localhost',
             'port': 3306,
             'database': 'eventhub'
@@ -461,6 +461,7 @@ class EventHub():
 
     #organizerdashboard
     def organizer_dashboard(self):
+        self.tkn.geometry("1000x600")
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
@@ -472,17 +473,20 @@ class EventHub():
         #treeview of the events created by the organizer
         # Create a Treeview widget to display events
         self.org_event_tree = ttk.Treeview(self.tkn, columns=(
-            "Event Name", "Event Date", "Event Time", "Event Location", "Registered Count"), show="headings")
-        self.org_event_tree.heading("#1", text="Event Name")
+            "Event ID","Event Name", "Event Date", "Event Time", "Event Location", "Registered Count"), show="headings")
+        self.org_event_tree.heading("#1", text="Event ID")
         self.org_event_tree.column("#1", width=150,anchor="center")
-        self.org_event_tree.heading("#2", text="Event Date")
-        self.org_event_tree.column("#2", width=150,anchor="center")
-        self.org_event_tree.heading("#3", text="Event Time")
+        self.org_event_tree.heading("#2", text="Event Name")
+        self.org_event_tree.column("#2", width=150, anchor="center")
+        self.org_event_tree.heading("#3", text="Event Date")
         self.org_event_tree.column("#3", width=150, anchor="center")
-        self.org_event_tree.heading("#4", text="Event Location")
+        self.org_event_tree.heading("#4", text="Event Time")
         self.org_event_tree.column("#4", width=150, anchor="center")
-        self.org_event_tree.heading("#5", text="Registered Count")
+        self.org_event_tree.heading("#5", text="Event Location")
         self.org_event_tree.column("#5", width=150, anchor="center")
+        self.org_event_tree.heading("#6", text="Registered Count")
+        self.org_event_tree.column("#6", width=150, anchor="center")
+
 
         # Get the organizer's email (you should have a way to fetch the organizer's email after login)
         organizer_email = self.current_email
@@ -510,7 +514,7 @@ class EventHub():
                     cursor.execute("SELECT * FROM eventhub.event WHERE eventID=%s", event_id)
                     event_data = cursor.fetchone()
                     #append all info except eventID and eventDescription
-                    events.append(event_data[2:6] + event_data[7:])
+                    events.append(event_data[0:1]+event_data[2:6] + event_data[7:])
 
                 cursor.close()
         
@@ -539,7 +543,11 @@ class EventHub():
     #org_show_event_rsvp_details_page
     def org_show_event_rsvp_details_page(self):
         
-        org_page_current_event = self.org_event_tree.focus()
+        #get values of the selected row
+        selected_row = self.org_event_tree.focus()
+        org_page_current_event = list(self.org_event_tree.item(selected_row, 'values'))
+
+
 
         for widget in self.tkn.winfo_children():
             widget.destroy()
@@ -566,8 +574,9 @@ class EventHub():
         # Connect to the MySQL database
         with self.database.cursor() as cursor:
                 # Query the event table in MySQL to get the eventID based on eventName
-                cursor.execute("SELECT eventID FROM eventhub.event WHERE eventName=%s", (org_page_current_event,))
+                cursor.execute("SELECT eventID FROM eventhub.event WHERE eventID=%s", (org_page_current_event[0],))
                 event_id = cursor.fetchone()
+                print(event_id)
     
                 if event_id:
                     # Query the eventRegistration table in MySQL to get userID associated with the event
@@ -600,6 +609,11 @@ class EventHub():
 
         #back to organizer dashboard button
         self.back_button = tkinter.Button(self.tkn, text="Back to Organizer Dashboard", command=self.organizer_dashboard)
+        self.configure_button(self.back_button)
+        self.back_button.configure(width=30)
+        self.back_button.pack(pady=10)
+
+
 
 
 
