@@ -22,10 +22,10 @@ class EventHub():
         self.style.configure('TNotebook', tabposition='n')
 
 
-
+        
         database = {
             'user': 'root',
-            'password': 'root',
+            'password': 'Lucky',
             'host': 'localhost',
             'port': 3306,
             'database': 'eventhub'
@@ -134,6 +134,7 @@ class EventHub():
         self.database.close()
 
 
+
     def configure_button(self, button):
         #curver border
         button.configure(bg="#0078d4", fg="white", font=("Verdana", 12), relief="raised")
@@ -157,7 +158,7 @@ class EventHub():
     def configure_entry(self, entry_widget):
         entry_widget.config(
             font=("Arial", 12),  # Font and font size
-            bd=2,  # Border width
+            bd=2,  # Border widt
             relief="ridge",  # Border style
             fg="black",  # Text color
             bg="white",  # Background color
