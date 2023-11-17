@@ -488,9 +488,9 @@ class EventHub():
         create_event_tab = ttk.Frame(organizer_notebook,width=200, height=200)
         organizer_notebook.add(create_event_tab, text='Create Event',sticky="nsew")
 
-        #event rsvp details tab
-        event_rsvp_details_tab = ttk.Frame(organizer_notebook,width=200, height=200)
-        organizer_notebook.add(event_rsvp_details_tab, text='Event RSVP Details',sticky="nsew")
+        # #event rsvp details tab
+        # event_rsvp_details_tab = ttk.Frame(organizer_notebook,width=200, height=200)
+        # organizer_notebook.add(event_rsvp_details_tab, text='Event RSVP Details',sticky="nsew")
 
         #pack the notebook
         organizer_notebook.pack(expand=1, fill='both')
@@ -498,7 +498,7 @@ class EventHub():
         #tab text and position to center
         organizer_notebook.tab(0, text="Events",compound=tkinter.CENTER)
         organizer_notebook.tab(1, text="Create Event",compound=tkinter.CENTER)
-        organizer_notebook.tab(2, text="Event RSVP Details",compound=tkinter.CENTER)
+        # organizer_notebook.tab(2, text="Event RSVP Details",compound=tkinter.CENTER)
 
         #events tab
         #display images of events in the events tab
@@ -920,6 +920,34 @@ class EventHub():
         #display the images in the frame
         self.display_events(user_my_events_frame,self.current_user_object)
 
+        #feedback tab
+        feedback_tab = ttk.Frame(self.user_notebook,width=200, height=200)
+        self.user_notebook.add(feedback_tab, text='Feedback',sticky="nsew")
+
+        #pack the notebook
+        self.user_notebook.pack(expand=1, fill='both')
+
+        #feedback tab
+        # create canvas for the images to display
+        self.user_feedback_canvas = tkinter.Canvas(feedback_tab)
+        self.user_feedback_canvas.pack(expand=True, fill='both')
+
+        #create scrollbar for the canvas
+        user_feedback_scrollbar = ttk.Scrollbar(feedback_tab, orient='vertical', command=self.user_feedback_canvas.yview)
+        user_feedback_scrollbar.pack(side=tkinter.RIGHT, fill='y')
+
+        #configure the canvas
+        self.user_feedback_canvas.configure(yscrollcommand=user_feedback_scrollbar.set)
+        self.user_feedback_canvas.bind('<Configure>', lambda e: self.user_feedback_canvas.configure(scrollregion=self.user_feedback_canvas.bbox("all")))
+
+        #create another frame inside the canvas
+        user_feedback_frame = tkinter.Frame(self.user_feedback_canvas)
+        self.user_feedback_canvas.create_window((0,0), window=user_feedback_frame, anchor="nw")
+
+        #display the images in the frame
+        self.display_events(user_feedback_frame,None,True)
+        
+
 
 
         #logout button
@@ -1096,7 +1124,7 @@ class EventHub():
 
 
     #display_orgainzer_events
-    def display_events(self,frame,current_user_object=None):
+    def display_events(self,frame,current_user_object=None,feedback=False):
         # Connect to the MySQL database
         # print("display events")
 
@@ -1130,13 +1158,71 @@ class EventHub():
             displayImage=Image.open(event[7])
             displayImage=displayImage.resize((200,250),Image.LANCZOS)
             displayImage=ImageTk.PhotoImage(displayImage)
-            eventdetails_button = tkinter.Button(frame, image=displayImage,compound=tkinter.TOP,command=lambda event=event: self.show_event_details_page(event,frame))
+            if feedback:
+                eventdetails_button = tkinter.Button(frame, image=displayImage,compound=tkinter.TOP,command=lambda event=event: self.show_event_feedback_page(event,frame))
+            else:
+                eventdetails_button = tkinter.Button(frame, image=displayImage,compound=tkinter.TOP,command=lambda event=event: self.show_event_details_page(event,frame))
             eventdetails_button.image = displayImage
 
             if self.user_type == "organizer":
                 eventdetails_button.configure(text=str(event[8])+" User Registered")
 
             eventdetails_button.grid(row=i//4, column=i%4, padx=10, pady=10)
+
+    #show_event_feedback_page
+    def show_event_feedback_page(self,event,frame):
+        # clear the frame
+        for widget in frame.winfo_children():
+            widget.destroy()
+
+        # display the event details
+        eventdetails = event
+        displayImage = Image.open(event[7])
+        displayImage = displayImage.resize((200, 250), Image.LANCZOS)
+        displayImage = ImageTk.PhotoImage(displayImage)
+        image_label = tkinter.Label(frame, image=displayImage)
+        image_label.image = displayImage
+        image_label.grid(row=0, column=0, padx=10, pady=10)
+
+        # print(eventdetails)
+
+        self.current_event = eventdetails
+
+
+        #display event name
+        
+
+
+        # frame from column 1
+        eventdetails_frame = tkinter.Frame(frame)
+        eventdetails_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+
+        event_name_label = tkinter.Label(eventdetails_frame, text="Event Name: " + str(eventdetails[2]))
+        self.configure_label(event_name_label)
+        event_name_label.grid(row=0, column=0, pady=10, padx=30, sticky="w")
+
+        #feedback label
+        feedback_label = tkinter.Label(eventdetails_frame, text="Feedback")
+        self.configure_label(feedback_label)
+        feedback_label.grid(row=1, column=0, pady=10, sticky="w", padx=30)
+
+        #feedback entry
+        self.feedback_entry = tkinter.Entry(eventdetails_frame)
+        self.configure_entry(self.feedback_entry)
+        self.feedback_entry.grid(row=2, column=0, pady=10, sticky="w", padx=30)
+
+        #feedback submit button
+        self.feedback_submit_button = tkinter.Button(eventdetails_frame, text="Submit", command=self.submit_feedback)
+        self.configure_button(self.feedback_submit_button)
+        self.feedback_submit_button.grid(row=3, column=0, pady=10, sticky="w", padx=30)
+
+        #back to user dashboard button
+        self.back_button = tkinter.Button(eventdetails_frame, text="Back to User Dashboard", command=self.user_dashboard)
+        self.configure_button(self.back_button)
+        #deep bottom center
+        self.back_button.grid(row=4, column=0, pady=10,sticky="w",padx=30)
+        #configure button width
+        self.back_button.configure(width=30)
 
 
     #show_event_details_page
@@ -1375,6 +1461,41 @@ class EventHub():
             self.back_button.pack(pady=10)
 
             #show_event_details_page
+
+
+    #submit_feedback
+    def submit_feedback(self):
+        #get the feedback
+        feedback = self.feedback_entry.get()
+
+        #get the event id
+        event_id = self.current_event[0]
+
+        #get the user id
+        user_id = self.current_user_object[0]
+
+        #check if user has already submitted feedback
+        with self.database.cursor() as cursor:
+            cursor.execute("SELECT * FROM eventhub.eventfeedback WHERE eventID=%s AND userID=%s", (event_id,user_id,))
+            feedbacks = cursor.fetchall()
+            cursor.close()
+
+        if feedbacks:
+            messagebox.showerror("Error", "You have already submitted feedback for this event")
+            return
+        
+
+        #insert the feedback into the database
+        with self.database.cursor() as cursor:
+            cursor.execute("INSERT INTO eventhub.eventfeedback(eventID,userID,feedback) VALUES (%s,%s,%s)", (event_id,user_id,feedback))
+            self.database.commit()
+            cursor.close()
+
+        #show success message
+        messagebox.showinfo("Success", "Feedback submitted successfully")
+
+        #display the event details page
+        self.user_dashboard()
 
         
     #print_event_users_pdf
