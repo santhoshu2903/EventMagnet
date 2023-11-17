@@ -1,5 +1,7 @@
+import os
 import tkinter
 from tkinter import messagebox
+from tkinter import filedialog
 import tkinter.ttk as ttk
 from PIL import ImageTk, Image
 import mysql.connector as mysql
@@ -88,6 +90,7 @@ class EventHub():
             eventTime VARCHAR(255) NOT NULL,
             eventLocation VARCHAR(255) NOT NULL,
             eventDescription TEXT NOT NULL,
+            eventImage VARCHAR(255) NOT NULL,
             registeredCount INT NOT NULL DEFAULT 0,
             FOREIGN KEY (organizerID) REFERENCES organizer (organizerID)
         );
@@ -461,79 +464,145 @@ class EventHub():
 
     #organizerdashboard
     def organizer_dashboard(self):
-        self.tkn.geometry("1000x600")
+        self.tkn.geometry("1000x700")
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
         # Add organizer dashboard elements
         label = tkinter.Label(self.tkn, text="Organizer Dashboard", font=("Helvetica", 20))
         label.configure(bg="white")
-        label.pack(pady=20)
+        label.pack(pady=10)
 
-        #treeview of the events created by the organizer
-        # Create a Treeview widget to display events
-        self.org_event_tree = ttk.Treeview(self.tkn, columns=(
-            "Event ID","Event Name", "Event Date", "Event Time", "Event Location", "Registered Count"), show="headings")
-        self.org_event_tree.heading("#1", text="Event ID")
-        self.org_event_tree.column("#1", width=150,anchor="center")
-        self.org_event_tree.heading("#2", text="Event Name")
-        self.org_event_tree.column("#2", width=150, anchor="center")
-        self.org_event_tree.heading("#3", text="Event Date")
-        self.org_event_tree.column("#3", width=150, anchor="center")
-        self.org_event_tree.heading("#4", text="Event Time")
-        self.org_event_tree.column("#4", width=150, anchor="center")
-        self.org_event_tree.heading("#5", text="Event Location")
-        self.org_event_tree.column("#5", width=150, anchor="center")
-        self.org_event_tree.heading("#6", text="Registered Count")
-        self.org_event_tree.column("#6", width=150, anchor="center")
+        #notebook for organizer dashboard
+        #create tabs
+        organizer_notebook = ttk.Notebook(self.tkn)
 
 
-        # Get the organizer's email (you should have a way to fetch the organizer's email after login)
-        organizer_email = self.current_email
 
-        # Connect to the MySQL database
-        with self.database.cursor() as cursor:
-                # Query the organizer table in MySQL to get the organizerID based on email
-                cursor.execute("SELECT organizerID FROM eventhub.organizer WHERE organizationEmail=%s", (organizer_email,))
-                organizer_id = cursor.fetchone()
-    
-                if organizer_id:
-                    # Query the event table in MySQL to get eventIDs associated with the organizer
-                    cursor.execute("SELECT eventID FROM eventhub.event WHERE organizerID=%s", (organizer_id[0],))
-                    event_ids = cursor.fetchall()
-                else:
-                    event_ids = []
-                
-                cursor.close()
-        
-        # Connect to the MySQL database
-        with self.database.cursor() as cursor:
-                # Retrieve event data for the organizer's events w
-                events = []
-                for event_id in event_ids:
-                    cursor.execute("SELECT * FROM eventhub.event WHERE eventID=%s", event_id)
-                    event_data = cursor.fetchone()
-                    #append all info except eventID and eventDescription
-                    events.append(event_data[0:1]+event_data[2:6] + event_data[7:])
+        #events tab
+        events_tab = ttk.Frame(organizer_notebook,width=200, height=200)
+        #font century gothic
+        organizer_notebook.add(events_tab, text='Events',sticky="nsew")
+        #configure the font to times
+        self.style.configure('TNotebook.Tab', font=('Calibri', '14', 'bold'))        
 
-                cursor.close()
-        
-        # Populate the Treeview with events created by the organizer
-        #testing
-        for event in events:
-            self.org_event_tree.insert("", "end", values=event)
+        #create event tab
+        create_event_tab = ttk.Frame(organizer_notebook,width=200, height=200)
+        organizer_notebook.add(create_event_tab, text='Create Event',sticky="nsew")
 
-        self.org_event_tree.pack()
+        #event rsvp details tab
+        event_rsvp_details_tab = ttk.Frame(organizer_notebook,width=200, height=200)
+        organizer_notebook.add(event_rsvp_details_tab, text='Event RSVP Details',sticky="nsew")
 
-        #event registration details button
-        event_rsvp_details_button = tkinter.Button(self.tkn, text="Event RSVP Details", command=self.org_show_event_rsvp_details_page)
-        self.configure_button(event_rsvp_details_button)
-        event_rsvp_details_button.pack(pady=20)
+        #pack the notebook
+        organizer_notebook.pack(expand=1, fill='both')
 
-        # Add buttons to navigate to different views
-        event_button = tkinter.Button(self.tkn, text="Add Event", command=self.show_organizer_event_page)
-        self.configure_button(event_button)
-        event_button.pack(pady=20)
+        #tab text and position to center
+        organizer_notebook.tab(0, text="Events",compound=tkinter.CENTER)
+        organizer_notebook.tab(1, text="Create Event",compound=tkinter.CENTER)
+        organizer_notebook.tab(2, text="Event RSVP Details",compound=tkinter.CENTER)
+
+        #events tab
+        #display images of events in the events tab
+        #display the image in images/welcome.jpg 900x600
+        #create canvas for the images to display
+        self.organzier_events_canvas = tkinter.Canvas(events_tab)
+        self.organzier_events_canvas.pack(expand=True, fill='both')
+
+        #create scrollbar for the canvas
+        organizer_events_scrollbar = ttk.Scrollbar(events_tab, orient='vertical', command=self.organzier_events_canvas.yview)
+        organizer_events_scrollbar.pack(side=tkinter.RIGHT, fill='y')
+        #extend the scrollbar to the while frame
+        self.organzier_events_canvas.configure(yscrollcommand=organizer_events_scrollbar.set)
+
+        #configure the canvas
+        self.organzier_events_canvas.configure(yscrollcommand=organizer_events_scrollbar.set)
+        self.organzier_events_canvas.bind('<Configure>', lambda e: self.organzier_events_canvas.configure(scrollregion=self.organzier_events_canvas.bbox("all")))
+
+        #create another frame inside the canvas
+        organizer_events_frame = tkinter.Frame(self.organzier_events_canvas)
+        self.organzier_events_canvas.create_window((0,0), window=organizer_events_frame, anchor="nw")
+
+        #display the images in the frame
+        self.display_events(organizer_events_frame)
+
+
+        #create event tab
+        # create frame for the create event tab
+        create_event_frame = tkinter.Frame(create_event_tab)
+        create_event_frame.pack(expand=True, fill='both',anchor="center")
+
+        # create two sections in the frame
+        event_details_frame = tkinter.Frame(create_event_frame)
+        event_details_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+
+        event_images_frame = tkinter.Frame(create_event_frame)
+        event_images_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+
+        # take event details from the organizer
+        # Event Name label and entry side by side
+        self.event_name_label = tkinter.Label(event_details_frame, text="Event Name:")
+        self.configure_label(self.event_name_label)
+        self.event_name_label.grid(row=0, column=0, pady=10,padx=30,sticky="w")
+        self.event_name_entry = tkinter.Entry(event_details_frame)
+        self.configure_entry(self.event_name_entry)
+        self.event_name_entry.grid(row=0, column=1, pady=10,sticky="w",padx=30)
+
+        # Event Date label and entry side by side
+        self.event_date_label = tkinter.Label(event_details_frame, text="Event Date: MM/DD/YYYY")
+        self.configure_label(self.event_date_label)
+        self.event_date_label.grid(row=1, column=0, pady=10,sticky="w",padx=30)
+        self.event_date_entry = DateEntry(event_details_frame, width=13, background="darkblue", foreground="white", date_pattern="MM/dd/yyyy", font=("Arial", 15))
+        #dateentry width and height
+        # self.configure_entry(self.event_date_entry)
+        self.event_date_entry.grid(row=1, column=1, pady=10,sticky="w",padx=30)
+
+        # Event Time label and entry side by side
+        self.event_time_label = tkinter.Label(event_details_frame, text="Event Time: HH:MM AM/PM")
+        self.configure_label(self.event_time_label)
+        self.event_time_label.grid(row=2, column=0, pady=10,sticky="w",padx=30)
+        self.event_time_entry = tkinter.Entry(event_details_frame)
+        self.configure_entry(self.event_time_entry)
+        self.event_time_entry.grid(row=2, column=1, pady=10,sticky="w",padx=30)
+
+        # Event Location label and entry side by side
+        self.event_location_label = tkinter.Label(event_details_frame, text="Event Location:")
+        self.configure_label(self.event_location_label)
+        self.event_location_label.grid(row=3, column=0, pady=10,sticky="w",padx=30)
+        self.event_location_entry = tkinter.Entry(event_details_frame)
+        self.configure_entry(self.event_location_entry)
+        self.event_location_entry.grid(row=3, column=1, pady=10,sticky="w",padx=30)
+
+        # Event Description label and entry side by side
+        self.event_description_label = tkinter.Label(event_details_frame, text="Event Description:")
+        self.configure_label(self.event_description_label)
+        self.event_description_label.grid(row=4, column=0, pady=10,sticky="w",padx=30)
+        self.event_description_entry = tkinter.Entry(event_details_frame)
+        self.configure_entry(self.event_description_entry)
+        self.event_description_entry.grid(row=4, column=1, pady=10,sticky="w",padx=30)
+        # Event Description entry height increase
+
+
+        # sbmit button
+        self.submit_button = tkinter.Button(create_event_frame, text="Submit", command=self.registerEvent)
+        self.configure_button(self.submit_button)
+        #packm bottom center
+        self.submit_button.grid(row=1, column=0, pady=10,sticky="nsew",padx=30)
+
+        # create a canvas for the event images upload by the organizer in column 3
+        # create canvas for the images to display
+        self.organzier_create_events_canvas = tkinter.Canvas(event_images_frame)
+        self.organzier_create_events_canvas.pack(expand=True, fill='both')
+
+        # frame for the canvas
+        organizer_events_frame = tkinter.Frame(self.organzier_create_events_canvas)
+        self.organzier_create_events_canvas.create_window((0, 0), window=organizer_events_frame, anchor="nw")
+
+        # upload button end of column 3
+        self.upload_button = tkinter.Button(event_images_frame, text="Upload Event Image", command=self.uploadEventImage)
+        self.configure_button(self.upload_button)
+        self.upload_button.pack(pady=10)
+
 
         logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
         self.configure_button(logout_button)
@@ -784,77 +853,81 @@ class EventHub():
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
+        #geometry of the window
+        self.tkn.geometry("1000x700")
+
         # Add user dashboard elements
         label = tkinter.Label(self.tkn, text="User Dashboard", font=("Helvetica", 20))
         label.configure(bg="white")
         label.pack(pady=20)
 
-        # Add buttons to navigate to different views
-        event_button = tkinter.Button(self.tkn, text="Register for Event", command=self.show_user_event_page)
-        self.configure_button(event_button)
-        event_button.pack(pady=20)
-
-        #create treeview of events registered by user
-        # Create a Treeview widget to display events
-        event_tree = ttk.Treeview(self.tkn, columns=(
-            "Event Name", "Event Date", "Event Time", "Event Location", "Event Description"), show="headings")
-        event_tree.heading("#1", text="Event Name")
-        event_tree.column("#1", width=150,anchor="center")
-        event_tree.heading("#2", text="Event Date")
-        event_tree.column("#2", width=150,anchor="center")
-        event_tree.heading("#3", text="Event Time")
-        event_tree.column("#3", width=150, anchor="center")
-        event_tree.heading("#4", text="Event Location")
-        event_tree.column("#4", width=150, anchor="center")
-        event_tree.heading("#5", text="Event Description")
-        event_tree.column("#5", width=150, anchor="center")
-
-        # Get the user's email (you should have a way to fetch the user's email after login)
-        user_email = self.current_email
-
-        # Connect to the MySQL database
-        with self.database.cursor() as cursor:
-                # Query the user table in MySQL to get the userID based on email
-                cursor.execute("SELECT userID FROM eventhub.user WHERE email=%s", (user_email,))
-                user_id = cursor.fetchone()
-    
-                if user_id:
-                    # Query the eventRegistration table in MySQL to get eventIDs associated with the user
-                    cursor.execute("SELECT eventID FROM eventhub.eventRegistration WHERE userID=%s", (user_id[0],))
-                    event_ids = cursor.fetchall()
-                else:
-                    event_ids = []
-                
-                cursor.close()
-
-        # Connect to the MySQL database
-        with self.database.cursor() as cursor:
-                # Retrieve event data for the user's registered events
-                events = []
-                for event_id in event_ids:
-                    cursor.execute("SELECT * FROM eventhub.event WHERE eventID=%s", event_id)
-                    event_data = cursor.fetchone()
-                    #append all info except eventID
-                    events.append(event_data[1:])
-
-                cursor.close()
+        #notebook for user dashboard
+        #create tabs
+        self.user_notebook = ttk.Notebook(self.tkn)
 
 
+        
+        #All Events tab
+        all_events_tab = ttk.Frame(self.user_notebook,width=200, height=200)
+        #font century gothic
+        self.user_notebook.add(all_events_tab, text='All Events',sticky="nsew")
+        #configure the font to times
+        self.style.configure('TNotebook.Tab', font=('Calibri', '14', 'bold'))
 
+        #My Events tab
+        my_events_tab = ttk.Frame(self.user_notebook,width=200, height=200)
+        self.user_notebook.add(my_events_tab, text='My Events',sticky="nsew")
 
+        #pack the notebook
+        self.user_notebook.pack(expand=1, fill='both')
 
+        #all events tab
+        # create canvas for the images to display
+        self.user_all_events_canvas = tkinter.Canvas(all_events_tab)
+        self.user_all_events_canvas.pack(expand=True, fill='both')
 
-        # Populate the Treeview with events registered by the user
-        #testing
-        #insert all the data except eventID , organizerID and registeredCount
-        for event in events:
-            event_tree.insert("", "end", values=event[1:6])
+        #create scrollbar for the canvas
+        user_all_events_scrollbar = ttk.Scrollbar(all_events_tab, orient='vertical', command=self.user_all_events_canvas.yview)
+        user_all_events_scrollbar.pack(side=tkinter.RIGHT, fill='y')
+        #extend the scrollbar to the total frame
 
-        event_tree.pack()
+        #configure the canvas
+        self.user_all_events_canvas.configure(yscrollcommand=user_all_events_scrollbar.set)
+        self.user_all_events_canvas.bind('<Configure>', lambda e: self.user_all_events_canvas.configure(scrollregion=self.user_all_events_canvas.bbox("all")))
 
+        #create another frame inside the canvas
+        user_all_events_frame = tkinter.Frame(self.user_all_events_canvas)
+        self.user_all_events_canvas.create_window((0,0), window=user_all_events_frame, anchor="nw")
+
+        #display the images in the frame
+        self.display_events(user_all_events_frame)
+
+        #my events tab
+        # create canvas for the images to display
+        self.user_my_events_canvas = tkinter.Canvas(my_events_tab)
+        self.user_my_events_canvas.pack(expand=True, fill='both')
+
+        #create scrollbar for the canvas
+        user_my_events_scrollbar = ttk.Scrollbar(my_events_tab, orient='vertical', command=self.user_my_events_canvas.yview)
+        user_my_events_scrollbar.pack(side=tkinter.RIGHT, fill='y')
+
+        #configure the canvas
+        self.user_my_events_canvas.configure(yscrollcommand=user_my_events_scrollbar.set)
+        self.user_my_events_canvas.bind('<Configure>', lambda e: self.user_my_events_canvas.configure(scrollregion=self.user_my_events_canvas.bbox("all")))
+
+        #create another frame inside the canvas
+        user_my_events_frame = tkinter.Frame(self.user_my_events_canvas)
+        self.user_my_events_canvas.create_window((0,0), window=user_my_events_frame, anchor="nw")
+
+        #display the images in the frame
+        self.display_events(user_my_events_frame,self.current_user_object)
+
+        #logout button
         logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
         self.configure_button(logout_button)
         logout_button.pack(pady=10)
+
+        
 
 
     def show_user_event_page(self):
@@ -917,6 +990,27 @@ class EventHub():
         self.configure_button(user_dashboard_button)
         user_dashboard_button.grid(row=3, column=1, pady=10)
 
+        #my events tab
+        # create canvas for the images to display
+        self.user_my_events_canvas = tkinter.Canvas(self.tkn)
+        self.user_my_events_canvas.grid(row=4, column=0, columnspan=3, padx=30,pady=10,sticky="nsew")
+
+        #create scrollbar for the canvas
+        user_my_events_scrollbar = ttk.Scrollbar(self.tkn, orient='vertical', command=self.user_my_events_canvas.yview)
+        user_my_events_scrollbar.grid(row=4, column=3, sticky="ns")
+
+        #configure the canvas
+        self.user_my_events_canvas.configure(yscrollcommand=user_my_events_scrollbar.set)
+        self.user_my_events_canvas.bind('<Configure>', lambda e: self.user_my_events_canvas.configure(scrollregion=self.user_my_events_canvas.bbox("all")))
+
+        #create another frame inside the canvas
+        user_my_events_frame = tkinter.Frame(self.user_my_events_canvas)
+        self.user_my_events_canvas.create_window((0,0), window=user_my_events_frame, anchor="nw")
+
+        #display the images in the frame
+        self.display_events(user_my_events_frame,self.current_user_object)
+
+
         # Back button to return to the main page
         back_button = tkinter.Button(self.tkn, text="Logout", command=self.show_main_page)
         self.configure_button(back_button)
@@ -925,6 +1019,314 @@ class EventHub():
 
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #uploadEventImage
+    def uploadEventImage(self):
+        #get the event name
+        event_name = self.event_name_entry.get()
+
+        #get the image file
+        self.current_image_path = filedialog.askopenfilename(initialdir="/", title="Select a File", filetypes=(("jpg files", "*.jpg"), ("png files", "*.png"), ("all files", "*.*")))
+
+        #get the image name
+        image_name = self.current_image_path.split("/")[-1]
+
+        #get the image extension
+        image_extension = image_name.split(".")[-1]
+
+        #check if the image is jpg or png
+        if image_extension not in ["jpg","png,""JPG","PNG","jpeg","JPEG"]:
+            messagebox.showerror("Error", "Please upload a jpg or png file")
+            return
+
+        #display the image in the organzier_create_events_canvas
+        event_image = Image.open(self.current_image_path)
+        event_image = event_image.resize((200, 300), Image.LANCZOS)
+        event_image = ImageTk.PhotoImage(event_image)
+
+        #create a label to display the image
+        event_image_label = tkinter.Label(self.organzier_create_events_canvas, image=event_image)
+        event_image_label.image = event_image
+        event_image_label.pack()
+
+        #update the upload event image button to uploaded 
+        self.upload_button.configure(text="Uploaded")
+
+
+    #display_orgainzer_events
+    def display_events(self,frame,current_user_object=None):
+        # Connect to the MySQL database
+        # print("display events")
+
+        if self.user_type == "organizer":
+            with self.database.cursor() as cursor:
+                # Retrieve event data from the 'event' table in MySQL
+                cursor.execute("SELECT * FROM eventhub.event WHERE organizerID=%s", (self.current_user_object[0],))
+                events = cursor.fetchall()
+        elif current_user_object:
+            with self.database.cursor() as cursor:
+                #retrieve the event ids of the events registered by the user
+                cursor.execute("SELECT eventID FROM eventhub.eventRegistration WHERE userID=%s", (current_user_object[0],))
+                event_ids = cursor.fetchall()
+
+                events=[]
+
+                for event_id in event_ids:
+                    #retrieve the event details of the events registered by the user
+                    cursor.execute("SELECT * FROM eventhub.event WHERE eventID=%s", (event_id[0],))
+                    event = cursor.fetchone()
+                    events.append(event)
+        else:
+            with self.database.cursor() as cursor:
+                # Retrieve event data from the 'event' table in MySQL
+                cursor.execute("SELECT * FROM eventhub.event")
+                events = cursor.fetchall()
+
+        for i, event in enumerate(events):
+            # print(event)
+            eventdetails = event[1:7]
+            displayImage=Image.open(event[7])
+            displayImage=displayImage.resize((200,250),Image.LANCZOS)
+            displayImage=ImageTk.PhotoImage(displayImage)
+            eventdetails_button = tkinter.Button(frame, image=displayImage,compound=tkinter.TOP,command=lambda event=event: self.show_event_details_page(event,frame))
+            eventdetails_button.image = displayImage
+
+            if self.user_type == "organizer":
+                eventdetails_button.configure(text=str(event[8])+" User Registered")
+
+            eventdetails_button.grid(row=i//4, column=i%4, padx=10, pady=10)
+
+
+    #show_event_details_page
+    def show_event_details_page(self, event, frame):
+        # clear the frame
+        for widget in frame.winfo_children():
+            widget.destroy()
+
+        # display the event details
+        eventdetails = event
+        displayImage = Image.open(event[7])
+        displayImage = displayImage.resize((200, 250), Image.LANCZOS)
+        displayImage = ImageTk.PhotoImage(displayImage)
+        image_label = tkinter.Label(frame, image=displayImage)
+        image_label.image = displayImage
+        image_label.grid(row=0, column=0, padx=10, pady=10)
+
+        # print(eventdetails)
+
+        self.current_event = eventdetails
+
+        # frame from column 1
+        eventdetails_frame = tkinter.Frame(frame)
+        eventdetails_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+
+        # Event Name label + event name
+        self.event_name_label = tkinter.Label(eventdetails_frame, text="Event Name: " + str(eventdetails[2]))
+        self.configure_label(self.event_name_label)
+        self.event_name_label.grid(row=0, column=0, pady=10, padx=30, sticky="w")
+
+        # Event Date label + event date
+        self.event_date_label = tkinter.Label(eventdetails_frame, text="Event Date: " + str(eventdetails[3]))
+        self.configure_label(self.event_date_label)
+        self.event_date_label.grid(row=1, column=0, pady=10, sticky="w", padx=30)
+
+        # Event Time label + event time
+        self.event_time_label = tkinter.Label(eventdetails_frame, text="Event Time: " + str(eventdetails[4]))
+        self.configure_label(self.event_time_label)
+        self.event_time_label.grid(row=2, column=0, pady=10, sticky="w", padx=30)
+
+        # Event Location label + event location
+        self.event_location_label = tkinter.Label(eventdetails_frame, text="Event Location: " + str(eventdetails[5]))
+        self.configure_label(self.event_location_label)
+        self.event_location_label.grid(row=3, column=0, pady=10, sticky="w", padx=30)
+
+        # Event Description label + event description
+        self.event_description_label = tkinter.Label(eventdetails_frame, text="Event Description: " + str(eventdetails[6]))
+        self.configure_label(self.event_description_label)
+        self.event_description_label.grid(row=4, column=0, pady=10, sticky="w", padx=30)
+
+        if self.user_type == "organizer":
+            #show registered users details button
+            self.show_event_rsvp_details_button = tkinter.Button(eventdetails_frame, text="Show RSVP Details", command=self.show_event_rsvp_details_page)
+            self.configure_button(self.show_event_rsvp_details_button)
+            self.show_event_rsvp_details_button.grid(row=5, column=0, pady=10, sticky="w", padx=30)
+            #width of the button
+            self.show_event_rsvp_details_button.configure(width=30)
+
+        elif self.user_type == "user":
+            # Register button to register for selected event
+            #check if the user is already registered for the event
+            with self.database.cursor() as cursor:
+                # Retrieve event data from the 'event' table in MySQL
+                cursor.execute("SELECT * FROM eventhub.eventRegistration WHERE userID=%s AND eventID=%s", (self.current_user_object[0],eventdetails[0]))
+                event_registrations = cursor.fetchall()
+
+            if not event_registrations:
+                self.register_button = tkinter.Button(eventdetails_frame, text="Register", command=self.register_for_event)
+                self.configure_button(self.register_button)
+                self.register_button.grid(row=5, column=0, pady=10, sticky="w", padx=30)
+                #width of the button
+                self.register_button.configure(width=30)
+
+
+
+        if self.user_type == "organizer":
+            #back to organizer dashboard button
+            self.back_button = tkinter.Button(eventdetails_frame, text="Back to Organizer Dashboard", command=self.organizer_dashboard)
+            self.configure_button(self.back_button)
+            #deep bottom center
+            self.back_button.grid(row=6, column=0, pady=10,sticky="w",padx=30)
+            #configure button width
+            self.back_button.configure(width=30)
+        elif self.user_type == "user":
+            #back to user dashboard button
+            self.back_button = tkinter.Button(eventdetails_frame, text="Back to User Dashboard", command=self.user_dashboard)
+            self.configure_button(self.back_button)
+            #deep bottom center
+            self.back_button.grid(row=6, column=0, pady=10,sticky="w",padx=30)
+            #configure button width
+            self.back_button.configure(width=30)
+
+
+    #show_event_rsvp_details_page
+    def show_event_rsvp_details_page(self):
+            
+            page_current_event = self.current_event
+            for widget in self.organzier_events_canvas.winfo_children():
+                widget.destroy()
+    
+            #Event RSVP Details Page
+            label = tkinter.Label(self.organzier_events_canvas, text="Users Registered to "+str(page_current_event[2]), font=("Helvetica", 20))
+            label.configure(bg="white")
+            label.pack(pady=20)
+    
+            #treeview of users registered to that particular event
+            # Create a Treeview widget to display events
+            event_tree = ttk.Treeview(self.organzier_events_canvas, columns=(
+                "First Name", "Last Name", "Email","Phone"), show="headings")
+            event_tree.heading("#1", text="First Name")
+            event_tree.column("#1", width=150,anchor="center")
+            event_tree.heading("#2", text="Last Name")
+            event_tree.column("#2", width=150,anchor="center")
+            event_tree.heading("#3", text="Email")
+            event_tree.column("#3", width=150, anchor="center")
+            event_tree.heading("#4", text="Phone")
+            event_tree.column("#4", width=150, anchor="center")
+
+            #treeview font size
+
+
+
+
+            #increase the width of the treeview
+            event_tree.column("#0", width=0, stretch=tkinter.NO)
+
+    
+            # print(page_current_event)
+    
+            #get users id that are registered to the event and then get their details
+            # Connect to the MySQL database
+            with self.database.cursor() as cursor:
+                    # Query the event table in MySQL to get the eventID based on eventName
+                    cursor.execute("SELECT eventID FROM eventhub.event WHERE eventID=%s", (page_current_event[0],))
+                    event_id = cursor.fetchone()
+                    print(event_id)
+        
+                    if event_id:
+                        # Query the eventRegistration table in MySQL to get userID associated with the event
+                        cursor.execute("SELECT userID FROM eventhub.eventRegistration WHERE eventID=%s", (event_id[0],))
+                        user_ids = cursor.fetchall()
+                    else:
+                        user_ids = []
+                    
+                    cursor.close()
+                
+            print(user_ids)
+            # Connect to the MySQL database
+            with self.database.cursor() as cursor:
+                    # Retrieve user data for the users registered to the event
+                    users = []
+                    for user_id in user_ids:
+                        cursor.execute("SELECT * FROM eventhub.user WHERE userID=%s", user_id)
+                        user_data = cursor.fetchone()
+                        #append all info except userID and password
+                        users.append(user_data[1:5])
+    
+                    cursor.close()
+    
+            # Populate the Treeview with users registered to the event
+            #testing
+            for user in users:
+                event_tree.insert("", "end", values=user)
+
+            event_tree.pack()
+
+            #print this event users pdf button
+            self.print_pdf_button = tkinter.Button(self.organzier_events_canvas, text="Print PDF of Users Registered", command=lambda event=page_current_event: self.print_event_users_pdf(users, page_current_event))
+            self.configure_button(self.print_pdf_button)
+            self.print_pdf_button.configure(width=30)
+            self.print_pdf_button.pack(pady=10)
+
+
+            #back to event details page button
+            self.back_button = tkinter.Button(self.organzier_events_canvas, text="Back to Event Details Page", command=lambda event=page_current_event: self.show_event_details_page(event,self.organzier_events_canvas))
+            self.configure_button(self.back_button)
+            self.back_button.configure(width=30)
+            self.back_button.pack(pady=10)
+
+            #back to organizer dashboard button
+            self.back_button = tkinter.Button(self.organzier_events_canvas, text="Back to Organizer Dashboard", command=self.organizer_dashboard)
+            self.configure_button(self.back_button)
+            self.back_button.configure(width=30)
+            self.back_button.pack(pady=10)
+
+            #show_event_details_page
+
+        
+    #print_event_users_pdf
+    def print_event_users_pdf(self, users, event):
+
+        # Create PDF
+        pdf = FPDF(orientation='P')
+        pdf.add_page()
+
+        # Add a title to the page
+        pdf.set_font("Arial", size=20)
+        pdf.cell(200, 10, txt="Current Users Report", ln=1, align="C")
+
+        # Add a header to the table
+        pdf.set_font("Arial", size=12)
+        pdf.cell(50, 10, txt="Name", border=1)
+        pdf.cell(80, 10, txt="Email", border=1)
+        pdf.cell(30, 10, txt="Phone", border=1)
+        pdf.ln()
+
+        # Add user data to the table
+        for user in users:
+            name = user[0] + " " + user[1]
+            email = user[2]
+            phone = user[3]
+
+            pdf.cell(50, 10, txt=name)
+            pdf.cell(80, 10, txt=email)
+            pdf.cell(30, 10, txt=phone)
+
+            pdf.ln()
+
+        # Save PDF file name with event name
+        pdf.output(event[2] + " Users.pdf")
+
+        # Show success message
+        messagebox.showinfo("Success", event[2]+" Users Report Generated Successfully")
+
+
+       
+
+    #show_organizer_events_page
+
+
+
+
 
     #registerOrganizer
     def registerOrganizer(self):
@@ -1015,13 +1417,16 @@ class EventHub():
     def verifyUser(self):
         #get the user's email
         self.current_email = self.email_entry.get()
+        self.user_type = ""
+
 
         if self.current_email == "admin":
             self.admin_dashboard()
             return
         
 
-        self.user_type = ""
+        
+
         #check with the database if the email exists
         query = "SELECT * FROM eventhub.user WHERE email = %s"
         data = (self.current_email,)
@@ -1048,7 +1453,11 @@ class EventHub():
             self.user_type = "user"
             self.current_user_object = user
             #testuser 
-            if self.current_email == "user@gmail.com":
+            if self.current_email == "user":
+                self.user_dashboard()
+                return
+            
+            if self.current_email != "laharireddy237@gmail.com":
                 self.user_dashboard()
                 return
 
@@ -1060,7 +1469,7 @@ class EventHub():
             self.user_type = "organizer"
             self.current_user_object = organizer
             #testorganizer
-            if self.current_email == "organizer@gmail.com":
+            if self.current_email != "laharireddy237@gmail.com":
                 self.organizer_dashboard()
                 return
             #send OTP to the organizer's email
@@ -1072,79 +1481,59 @@ class EventHub():
         self.login_button.configure(state="normal")
 
 
+    #register_for_event
     def register_for_event(self):
-        # Get the selected event
-        selected_event = self.event_tree.focus()
+        #current event details
+        current_event = self.current_event
+        #current user details
+        current_user = self.current_user_object
 
-        # Validate that an event was selected
-        if selected_event == "":
-            messagebox.showerror("Error", "Please select an event")
-        else:
-            # Get the eventid
-            event_data = self.event_tree.item(selected_event, "values")
+        #check if the user is already registered for the event
+        query = "SELECT * FROM eventhub.eventRegistration WHERE eventID = %s AND userID = %s"
+        data = (current_event[0],current_user[0])
+        try:
+            self.cursor.execute(query, data)
+            event = self.cursor.fetchone()
+        except mysql.Error as err:
+            messagebox.showerror("Error", f"MySQL Error: {err}")
+            return
+        
+        if event is not None:
+            messagebox.showerror("Error", "You are already registered for this event")
+            return
+        
+        eventid = current_event[0]
+        userid = current_user[0]
+        organizerid = current_event[1]
 
-            event_id=event_data[0]
+        # Insert the user's input into the database
+        query = "INSERT INTO eventhub.eventRegistration(eventID, userID, organizerID) VALUES (%s, %s, %s)"
+        data = (eventid, userid, organizerid)
 
-            #get the whole event data with eventID
-            query = "SELECT * FROM eventhub.event WHERE eventID = %s"
-            data = (event_id,)
+        try:
+            self.cursor.execute(query, data)
+            self.database.commit()
+            messagebox.showinfo("Success", "You have registered successfully!")
+
+            #increment the registered count of the event
+            query = "UPDATE eventhub.event SET registeredCount = registeredCount + 1 WHERE eventID = %s"
+            data = (current_event[0],)
+
             try:
                 self.cursor.execute(query, data)
-                event_data = self.cursor.fetchone()
+                self.database.commit()
             except mysql.Error as err:
                 messagebox.showerror("Error", f"MySQL Error: {err}")
                 return
-            
 
-            # Get the user's email (you should have a way to fetch the user's email after login)
-            user_email = self.current_email  # Replace with the actual user's email
+            #show the user dashboard
+            self.user_dashboard()
+            #set default tab after registering for an event to my events
+            self.user_notebook.select(1)
+        except mysql.Error as err:
+            messagebox.showerror("Error", f"MySQL Error: {err}")
 
-            # Connect to the 'eventhub' database and retrieve the user's ID based on email
-            query = "SELECT userID FROM eventhub.user WHERE email = %s"
-            data = (user_email,)
 
-            try:
-                self.cursor.execute(query, data)
-                user_id = self.cursor.fetchone()
-            except mysql.Error as err:
-                messagebox.showerror("Error", f"MySQL Error: {err}")
-                return
-            
-            #get 
-
-            if user_id:
-                # Check if the user has already registered for this event
-                query = "SELECT * FROM eventhub.eventRegistration WHERE eventID = %s AND userID = %s"
-                data = (event_data[0], user_id[0])
-
-                try:
-                    self.cursor.execute(query, data)
-                    existing_registration = self.cursor.fetchone()
-                except mysql.Error as err:
-                    messagebox.showerror("Error", f"MySQL Error: {err}")
-                    return
-
-                if existing_registration:
-                    messagebox.showinfo("Info", "You have already registered for this event.")
-                else:
-                    # Connect to the 'eventRegistration' database and insert the event's data
-                    query = "INSERT INTO eventhub.eventRegistration(eventID, userID,organizerID) VALUES (%s, %s,%s)"
-                    data = (event_data[0], user_id[0],event_data[1])
-                    #increment query
-                    query2 = "UPDATE eventhub.event SET registeredCount = registeredCount + 1 WHERE eventID = %s"
-                    data2 = (event_data[0],)
-                    try:
-                        self.cursor.execute(query, data)
-                        self.cursor.execute(query2, data2)
-                        self.database.commit()
-                        #send gmail confirmation method
-                        self.sendEmailConfirmation(user_email,event_data)
-                        messagebox.showinfo("Success", "You have registered for the event successfully!")
-                        self.user_dashboard()
-                    except mysql.Error as err:
-                        messagebox.showerror("Error", f"MySQL Error: {err}")
-            else:
-                messagebox.showerror("Error", "User not found")
 
 
     def search_events(self):
@@ -1449,6 +1838,8 @@ class EventHub():
         eventTime = self.event_time_entry.get()
         eventLocation = self.event_location_entry.get()
         eventDescription = self.event_description_entry.get()
+        #path
+        eventImage = self.current_image_path
 
         #get current organizer id from current_user_object
         organizer_id = self.current_user_object[0]
@@ -1460,8 +1851,8 @@ class EventHub():
             messagebox.showerror("Error", "Please fill in all fields")
         else:
             # Insert the user's input into the database with organizerID
-            query = "INSERT INTO eventhub.event(eventName, eventDate, eventTime, eventLocation, eventDescription, organizerID) VALUES (%s, %s, %s, %s, %s, %s)"
-            values = (eventName, eventDate, eventTime, eventLocation, eventDescription, organizer_id)
+            query = "INSERT INTO eventhub.event(eventName, eventDate, eventTime, eventLocation, eventDescription, organizerID,eventImage) VALUES (%s, %s, %s, %s, %s, %s,%s)"
+            values = (eventName, eventDate, eventTime, eventLocation, eventDescription, organizer_id,eventImage)
 
 
             self.cursor.execute(query, values)
@@ -1475,7 +1866,5 @@ class EventHub():
 
 
 if __name__ == "__main__":
-
-
     app = EventHub()
     app.tkn.mainloop()
