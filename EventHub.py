@@ -782,6 +782,8 @@ class EventHub():
 
 
     def admin_dashboard(self):
+
+        self.tkn.geometry("1000x700")
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
@@ -852,17 +854,10 @@ class EventHub():
         # Populate the Treeview with events 
         for event in events:
             #insert all columns except eventimage
-            self.events_tree.insert("", "end", values=event[1:6] +event[7:8])
+            self.events_tree.insert("", "end", values=event[1:6] +event[8:9])
 
         # Pack the Treeview widget
         self.events_tree.pack()
-
-        #back to admin dashboard button
-        self.back_button = tkinter.Button(self.tkn, text="Back to Admin Dashboard", command=self.admin_dashboard)
-        self.configure_button(self.back_button)
-        self.back_button.configure(width=30)
-        self.back_button.pack(pady=10)
-
         #users reports tab
         # create treeview for the users reports tab
         self.users_tree = ttk.Treeview(users_reports_tab, columns=(
@@ -950,33 +945,6 @@ class EventHub():
 
         # Pack the Treeview widget
         self.event_registrations_tree.pack()
-
-        logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
-        self.configure_button(logout_button)
-        logout_button.pack(pady=10)
-
-
-
-
-        #button to get pdf of all the events
-        get_pdf_button = tkinter.Button(self.tkn, text="Get PDF of all the events", command=self.events_report_pdf)
-        self.configure_button(get_pdf_button)
-        get_pdf_button.pack(pady=20)
-
-        #button to get pdf of all the users
-        get_pdf_button = tkinter.Button(self.tkn, text="Get PDF of all the users", command=self.users_report_pdf)
-        self.configure_button(get_pdf_button)
-        get_pdf_button.pack(pady=20)
-
-        #button to get pdf of all the organizers
-        get_pdf_button = tkinter.Button(self.tkn, text="Get PDF of all the organizers", command=self.organizers_report_pdf)
-        self.configure_button(get_pdf_button)
-        get_pdf_button.pack(pady=20)
-
-        #button to get pdf of all the event registrations
-        get_pdf_button = tkinter.Button(self.tkn, text="Get PDF of all the event registrations", command=self.event_registrations_report_pdf)
-        self.configure_button(get_pdf_button)
-        get_pdf_button.pack(pady=20)
 
         logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
         self.configure_button(logout_button)
