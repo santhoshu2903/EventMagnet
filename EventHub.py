@@ -477,8 +477,6 @@ class EventHub():
         #create tabs
         organizer_notebook = ttk.Notebook(self.tkn)
 
-
-
         #events tab
         events_tab = ttk.Frame(organizer_notebook,width=200, height=200)
         #font century gothic
@@ -922,6 +920,8 @@ class EventHub():
         #display the images in the frame
         self.display_events(user_my_events_frame,self.current_user_object)
 
+
+
         #logout button
         logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
         self.configure_button(logout_button)
@@ -1020,6 +1020,48 @@ class EventHub():
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+    #unregister_for_event
+    def unregister_for_event(self):
+        #get values of the selected row
+        selected_event = self.current_event
+
+        #delete the event from the database
+        with self.database.cursor() as cursor:
+            #delete the event from the eventRegistration table
+            cursor.execute("DELETE FROM eventhub.eventRegistration WHERE eventID=%s AND userID=%s", (selected_event[0],self.current_user_object[0],))
+            self.database.commit()
+
+            cursor.close()
+
+        #display the events page
+        self.user_dashboard()
+
+    #delete_event
+    def delete_event(self):
+        #current event
+        selectedevent = self.current_event
+
+        #delete all the registrations of the event from the eventRegistration table
+        with self.database.cursor() as cursor:
+            cursor.execute("DELETE FROM eventhub.eventRegistration WHERE eventID=%s", (selectedevent[0],))
+            self.database.commit()
+            cursor.close()
+
+
+        #delete the event from the database
+        with self.database.cursor() as cursor:
+            #delete the event from the event table
+            cursor.execute("DELETE FROM eventhub.event WHERE eventID=%s", (selectedevent[0],))
+            self.database.commit()
+
+            #delete the event from the eventRegistration table
+            cursor.execute("DELETE FROM eventhub.eventRegistration WHERE eventID=%s", (selectedevent[0],))
+            self.database.commit()
+
+            cursor.close()
+
+        #display the events page
+        self.organizer_dashboard()
     #uploadEventImage
     def uploadEventImage(self):
         #get the event name
@@ -1098,7 +1140,7 @@ class EventHub():
 
 
     #show_event_details_page
-    def show_event_details_page(self, event, frame):
+    def show_event_details_page(self, event, frame,feedback=False):
         # clear the frame
         for widget in frame.winfo_children():
             widget.destroy()
@@ -1120,7 +1162,32 @@ class EventHub():
         eventdetails_frame = tkinter.Frame(frame)
         eventdetails_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
 
-        # Event Name label + event name
+        # if feedback:
+        #     #feedback label
+        #     feedback_label = tkinter.Label(eventdetails_frame, text="Feedback")
+        #     self.configure_label(feedback_label)
+        #     feedback_label.grid(row=0, column=0, pady=10, sticky="w", padx=30)
+
+        #     #feedback entry
+        #     self.feedback_entry = tkinter.Entry(eventdetails_frame)
+        #     self.configure_entry(self.feedback_entry)
+        #     self.feedback_entry.grid(row=1, column=0, pady=10, sticky="w", padx=30)
+
+        #     #feedback submit button
+        #     self.feedback_submit_button = tkinter.Button(eventdetails_frame, text="Submit", command=self.submit_feedback)
+        #     self.configure_button(self.feedback_submit_button)
+        #     self.feedback_submit_button.grid(row=2, column=0, pady=10, sticky="w", padx=30)
+
+        #     #back to user dashboard button
+        #     self.back_button = tkinter.Button(eventdetails_frame, text="Back to User Dashboard", command=self.user_dashboard)
+        #     self.configure_button(self.back_button)
+        #     #deep bottom center
+        #     self.back_button.grid(row=3, column=0, pady=10,sticky="w",padx=30)
+        #     #configure button width
+        #     self.back_button.configure(width=30)
+        #     return
+        # else:  
+            # Event Name label + event name
         self.event_name_label = tkinter.Label(eventdetails_frame, text="Event Name: " + str(eventdetails[2]))
         self.configure_label(self.event_name_label)
         self.event_name_label.grid(row=0, column=0, pady=10, padx=30, sticky="w")
@@ -1145,6 +1212,7 @@ class EventHub():
         self.configure_label(self.event_description_label)
         self.event_description_label.grid(row=4, column=0, pady=10, sticky="w", padx=30)
 
+
         if self.user_type == "organizer":
             #show registered users details button
             self.show_event_rsvp_details_button = tkinter.Button(eventdetails_frame, text="Show RSVP Details", command=self.show_event_rsvp_details_page)
@@ -1152,6 +1220,14 @@ class EventHub():
             self.show_event_rsvp_details_button.grid(row=5, column=0, pady=10, sticky="w", padx=30)
             #width of the button
             self.show_event_rsvp_details_button.configure(width=30)
+
+            #delete event button
+            self.delete_event_button = tkinter.Button(eventdetails_frame, text="Delete Event", command=self.delete_event)
+            self.configure_button(self.delete_event_button)
+            self.delete_event_button.grid(row=6, column=0, pady=10, sticky="w", padx=30)
+            #width of the button
+
+            self.delete_event_button.configure(width=30)
 
         elif self.user_type == "user":
             # Register button to register for selected event
@@ -1167,6 +1243,14 @@ class EventHub():
                 self.register_button.grid(row=5, column=0, pady=10, sticky="w", padx=30)
                 #width of the button
                 self.register_button.configure(width=30)
+            else:
+                #unregister button
+                self.unregister_button = tkinter.Button(eventdetails_frame, text="Unregister", command=self.unregister_for_event)
+                self.configure_button(self.unregister_button)
+                self.unregister_button.grid(row=5, column=0, pady=10, sticky="w", padx=30)
+                #width of the button
+                self.unregister_button.configure(width=30)
+
 
 
 
@@ -1175,10 +1259,20 @@ class EventHub():
             self.back_button = tkinter.Button(eventdetails_frame, text="Back to Organizer Dashboard", command=self.organizer_dashboard)
             self.configure_button(self.back_button)
             #deep bottom center
-            self.back_button.grid(row=6, column=0, pady=10,sticky="w",padx=30)
+            self.back_button.grid(row=7, column=0, pady=10,sticky="w",padx=30)
             #configure button width
             self.back_button.configure(width=30)
         elif self.user_type == "user":
+            
+            # #feedbackpage button
+            # self.feedback_button = tkinter.Button(eventdetails_frame, text="Feedback", command=self.show_event_details_page(eventdetails,frame,True))
+            # self.configure_button(self.feedback_button)
+            # #deep bottom center
+            # self.feedback_button.grid(row=6, column=0, pady=10,sticky="w",padx=30)
+            # #configure button width
+            # self.feedback_button.configure(width=30)
+
+
             #back to user dashboard button
             self.back_button = tkinter.Button(eventdetails_frame, text="Back to User Dashboard", command=self.user_dashboard)
             self.configure_button(self.back_button)
