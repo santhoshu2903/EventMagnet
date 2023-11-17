@@ -121,7 +121,8 @@ class EventHub():
             eventCommentID INT AUTO_INCREMENT PRIMARY KEY,
             eventID INT NOT NULL,
             userID INT NOT NULL,
-            comment TEXT NOT NULL,
+            rating TEXT NOT NULL,
+            feedback TEXT NOT NULL,
             FOREIGN KEY (eventID) REFERENCES event (eventID),
             FOREIGN KEY (userID) REFERENCES user (userID)
         );
@@ -238,35 +239,61 @@ class EventHub():
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
-        # Create a frame for the main page content
-        main_frame = tkinter.Frame(self.tkn)
-        main_frame.configure(bg="white")
-        main_frame.pack(expand=True)
+        #Event Hub label
+        event_hub_label = tkinter.Label(self.tkn, text="Event Hub", font=("Helvetica", 20))
+        event_hub_label.configure(bg="white")
+        event_hub_label.pack(pady=10)
 
-        # Add a title label
-        title_label = tkinter.Label(main_frame, text="EVENT HUB", font=("Helvetica", 20))
-        title_label.configure(bg="white")
-        title_label.pack(pady=20)
+        #create frame for the main page
+        main_page_frame = tkinter.Frame(self.tkn)
+        #bg
+        main_page_frame.configure(bg="white")
+        main_page_frame.pack(pady=10)
 
-        # Create a grid for the buttons
-        button_frame = tkinter.Frame(main_frame)
-        button_frame.configure(bg="white")
-        button_frame.pack(expand=True)
 
-        # Add buttons to navigate to different views
-        welcome_button = tkinter.Button(button_frame, text="Back to Welcome Page", command=self.show_welcome_page)
-        login_button = tkinter.Button(button_frame, text="Login", command=self.show_login_page)
-        register_button = tkinter.Button(button_frame, text="Register", command=self.show_register_page)
+        
 
-        # Configure button appearance
-        self.configure_button(welcome_button)
+
+        #make two frames each column
+        #frame for the left column
+        left_frame = tkinter.Frame(main_page_frame)
+        #bg
+        left_frame.configure(bg="white")
+        left_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+
+        #frame for the right column
+        right_frame = tkinter.Frame(main_page_frame)
+        #bg
+        right_frame.configure(bg="white")
+        right_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+
+        #display login.png image in the left frame
+        login_image= Image.open("images/login.png")
+        login_image = login_image.resize((300, 300), Image.LANCZOS)
+        login_image = ImageTk.PhotoImage(login_image)
+        #resize the image
+        login_image_label = tkinter.Label(left_frame, image=login_image)
+        login_image_label.photo = login_image
+        login_image_label.pack(pady=10)
+
+        #display login, register and back to welcome page buttons in the right frame
+        #login button
+        login_button = tkinter.Button(right_frame, text="Login", command=self.show_login_page)
         self.configure_button(login_button)
-        self.configure_button(register_button)
+        login_button.pack(pady=30, padx=10)
 
-        # Pack the buttons in a grid layout
-        welcome_button.grid(row=2, column=0, padx=10, pady=10)
-        login_button.grid(row=0, column=0, padx=10, pady=10)
-        register_button.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
+        #register button
+        register_button = tkinter.Button(right_frame, text="Register", command=self.show_register_page)
+        self.configure_button(register_button)
+        register_button.pack(pady=30)
+
+        #back to welcome page button
+        back_button = tkinter.Button(right_frame, text="Back to Welcome", command=self.show_welcome_page)
+        self.configure_button(back_button)
+        back_button.pack(pady=30)
+
+
+
 
 
     def show_login_page(self):
@@ -277,6 +304,9 @@ class EventHub():
         label = tkinter.Label(self.tkn, text="Welcome to Login", font=("Helvetica", 20))
         label.configure(bg="white")
         label.pack(pady=20)
+
+
+        # First Name entry
 
         # Email (Gmail ID) entry
         self.email_entry = tkinter.Label(self.tkn, text="Enter Email ID :")
@@ -755,8 +785,6 @@ class EventHub():
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
-
-
         # Add admin dashboard elements
         label = tkinter.Label(self.tkn, text="Admin Dashboard", font=("Helvetica", 20))
 
@@ -826,13 +854,109 @@ class EventHub():
             #insert all columns except eventimage
             self.events_tree.insert("", "end", values=event[1:6] +event[7:8])
 
+        # Pack the Treeview widget
+        self.events_tree.pack()
+
+        #back to admin dashboard button
+        self.back_button = tkinter.Button(self.tkn, text="Back to Admin Dashboard", command=self.admin_dashboard)
+        self.configure_button(self.back_button)
+        self.back_button.configure(width=30)
+        self.back_button.pack(pady=10)
+
+        #users reports tab
+        # create treeview for the users reports tab
+        self.users_tree = ttk.Treeview(users_reports_tab, columns=(
+            "User Name", "User Email", "User Phone"), show="headings")
+        self.users_tree.heading("#1", text="User Name")
+        self.users_tree.column("#1", width=150, anchor="center")
+        self.users_tree.heading("#2", text="User Email")
+        self.users_tree.column("#2", width=150, anchor="center")
+        self.users_tree.heading("#3", text="User Phone")
+        self.users_tree.column("#3", width=150, anchor="center")
+
+        # Populate the Treeview with users
+        # Connect to the MySQL database
+        with self.database.cursor() as cursor:
+            # Retrieve all users from the user table in MySQL
+            cursor.execute("SELECT * FROM eventhub.user")
+            users = cursor.fetchall()
+            cursor.close()
+
+        # Populate the Treeview with users
+        for user in users:
+            #insert all columns except userID and password
+            self.users_tree.insert("", "end", values=user[1:3] + user[5:])
+
+        # Pack the Treeview widget
+        self.users_tree.pack()
+
+
+        #organizers reports tab
+        # create treeview for the organizers reports tab
+        self.organizers_tree = ttk.Treeview(organizers_reports_tab, columns=(
+            "Organizer Name", "Organization Name", "Organizer Email", "Organizer Phone"), show="headings")
+        self.organizers_tree.heading("#1", text="Organizer Name")
+
+        self.organizers_tree.heading("#2", text="Organization Name")
+        self.organizers_tree.column("#2", width=150, anchor="center")
+        self.organizers_tree.heading("#3", text="Organizer Email")
+        self.organizers_tree.column("#3", width=150, anchor="center")
+        self.organizers_tree.heading("#4", text="Organizer Phone")
+        self.organizers_tree.column("#4", width=150, anchor="center")
+
+        # Populate the Treeview with organizers
+        # Connect to the MySQL database
+        with self.database.cursor() as cursor:
+            # Retrieve all organizers from the organizer table in MySQL
+            cursor.execute("SELECT * FROM eventhub.organizer")
+            organizers = cursor.fetchall()
+            cursor.close()
+
+        # Populate the Treeview with organizers
+        for organizer in organizers:
+            #insert all columns except organizerID and password
+            self.organizers_tree.insert("", "end", values=organizer[1:3] + organizer[4:])
+
+        # Pack the Treeview widget
+        self.organizers_tree.pack()
 
 
 
-        # Add admin dashboard elements
-        label = tkinter.Label(self.tkn, text="Admin Dashboard", font=("Helvetica", 20))
-        label.configure(bg="white")
-        label.pack(pady=20)
+        #event registrations reports tab
+        # create treeview for the event registrations reports tab
+        self.event_registrations_tree = ttk.Treeview(event_registrations_reports_tab, columns=(
+            "Event Name", "User Name", "User Email", "User Phone"), show="headings")
+        self.event_registrations_tree.heading("#1", text="Event Name")
+        self.event_registrations_tree.column("#1", width=150, anchor="center")
+        self.event_registrations_tree.heading("#2", text="User Name")
+        self.event_registrations_tree.column("#2", width=150, anchor="center")
+        self.event_registrations_tree.heading("#3", text="User Email")
+        self.event_registrations_tree.column("#3", width=150, anchor="center")
+        self.event_registrations_tree.heading("#4", text="User Phone")
+        self.event_registrations_tree.column("#4", width=150, anchor="center")
+
+        # Populate the Treeview with event registrations
+        # Connect to the MySQL database
+        with self.database.cursor() as cursor:
+            # Retrieve all event registrations from the eventRegistration table in MySQL
+            cursor.execute("SELECT * FROM eventhub.eventRegistration")
+            event_registrations = cursor.fetchall()
+            cursor.close()
+
+        # Populate the Treeview with event registrations
+        for event_registration in event_registrations:
+            #insert all columns except eventRegistrationID
+            self.event_registrations_tree.insert("", "end", values=event_registration[1:])
+
+        # Pack the Treeview widget
+        self.event_registrations_tree.pack()
+
+        logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
+        self.configure_button(logout_button)
+        logout_button.pack(pady=10)
+
+
+
 
         #button to get pdf of all the events
         get_pdf_button = tkinter.Button(self.tkn, text="Get PDF of all the events", command=self.events_report_pdf)
@@ -1491,6 +1615,10 @@ class EventHub():
         #get the feedback
         feedback = self.feedback_entry.get()
 
+        #combobox value
+        feedback_value = self.feedback_combobox.get()
+    
+
         #get the event id
         event_id = self.current_event[0]
 
@@ -1510,7 +1638,7 @@ class EventHub():
 
         #insert the feedback into the database
         with self.database.cursor() as cursor:
-            cursor.execute("INSERT INTO eventhub.eventfeedback(eventID,userID,feedback) VALUES (%s,%s,%s)", (event_id,user_id,feedback))
+            cursor.execute("INSERT INTO eventhub.eventfeedback(eventID,userID,rating,feedback) VALUES (%s,%s,%s,%s)", (event_id,user_id,feedback_value,feedback))
             self.database.commit()
             cursor.close()
 
