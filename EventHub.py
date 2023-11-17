@@ -755,6 +755,80 @@ class EventHub():
         for widget in self.tkn.winfo_children():
             widget.destroy()
 
+
+
+        # Add admin dashboard elements
+        label = tkinter.Label(self.tkn, text="Admin Dashboard", font=("Helvetica", 20))
+
+        label.configure(bg="white")
+        label.pack(pady=20)
+
+        #notebook for admin dashboard
+
+        #create tabs
+        admin_notebook = ttk.Notebook(self.tkn)
+
+        #Events reports tab
+        events_reports_tab = ttk.Frame(admin_notebook,width=200, height=200)
+        #font century gothic
+        admin_notebook.add(events_reports_tab, text='Events Reports',sticky="nsew")
+        #configure the font to times
+        self.style.configure('TNotebook.Tab', font=('Calibri', '14', 'bold'))
+
+        #Users reports tab
+        users_reports_tab = ttk.Frame(admin_notebook,width=200, height=200)
+        admin_notebook.add(users_reports_tab, text='Users Reports',sticky="nsew")
+
+        #Organizers reports tab
+        organizers_reports_tab = ttk.Frame(admin_notebook,width=200, height=200)
+        admin_notebook.add(organizers_reports_tab, text='Organizers Reports',sticky="nsew")
+
+        #Event Registrations reports tab
+        event_registrations_reports_tab = ttk.Frame(admin_notebook,width=200, height=200)
+        admin_notebook.add(event_registrations_reports_tab, text='Event Registrations Reports',sticky="nsew")
+
+        #pack the notebook
+        admin_notebook.pack(expand=1, fill='both')
+
+        #tab text and position to center
+        admin_notebook.tab(0, text="Events Reports",compound=tkinter.CENTER)
+        admin_notebook.tab(1, text="Users Reports",compound=tkinter.CENTER)
+        admin_notebook.tab(2, text="Organizers Reports",compound=tkinter.CENTER)
+        admin_notebook.tab(3, text="Event Registrations Reports",compound=tkinter.CENTER)
+
+        #events reports tab
+        # create treeview for the events reports tab
+        self.events_tree = ttk.Treeview(events_reports_tab, columns=(
+            "Event Name", "Event Date", "Event Time", "Event Location", "Event Description","Registered Count"), show="headings")
+        self.events_tree.heading("#1", text="Event Name")
+
+        self.events_tree.heading("#2", text="Event Date")
+        self.events_tree.column("#2", width=150, anchor="center")
+        self.events_tree.heading("#3", text="Event Time")
+        self.events_tree.column("#3", width=150, anchor="center")
+        self.events_tree.heading("#4", text="Event Location")
+        self.events_tree.column("#4", width=150, anchor="center")
+        self.events_tree.heading("#5", text="Event Description")
+        self.events_tree.column("#5", width=150, anchor="center")
+        self.events_tree.heading("#6", text="Registered Count")
+        self.events_tree.column("#6", width=150, anchor="center")
+
+        # Populate the Treeview with events
+        # Connect to the MySQL database
+        with self.database.cursor() as cursor:
+            # Retrieve all events from the event table in MySQL
+            cursor.execute("SELECT * FROM eventhub.event")
+            events = cursor.fetchall()
+            cursor.close()
+
+        # Populate the Treeview with events 
+        for event in events:
+            #insert all columns except eventimage
+            self.events_tree.insert("", "end", values=event[1:6] +event[7:8])
+
+
+
+
         # Add admin dashboard elements
         label = tkinter.Label(self.tkn, text="Admin Dashboard", font=("Helvetica", 20))
         label.configure(bg="white")
@@ -783,68 +857,6 @@ class EventHub():
         logout_button = tkinter.Button(self.tkn, text="Logout", command=self.show_welcome_page)
         self.configure_button(logout_button)
         logout_button.pack(pady=10)
-
-
-        
-    def show_admin_event_page(self):
-        for widget in self.tkn.winfo_children():
-            widget.destroy()
-
-        # Add event form elements
-        label = tkinter.Label(self.tkn, text="Admin Event Page", font=("Helvetica", 20))
-        label.configure(bg="white")
-        label.pack(pady=20)
-
-        # Event Name entry
-        self.event_name_label = tkinter.Label(self.tkn, text="Event Name:")
-        self.configure_label(self.event_name_label)
-        self.event_name_label.pack()
-
-        self.event_name_entry = tkinter.Entry(self.tkn)
-        self.configure_entry(self.event_name_entry)
-        self.event_name_entry.pack()
-
-        # Event Date entry
-        self.event_date_label = tkinter.Label(self.tkn, text="Event Date:")
-        self.configure_label(self.event_date_label)
-        self.event_date_label.pack()
-        self.event_date_entry = DateEntry(self.tkn,width=15,background="darkblue", foreground="white", date_pattern="MM/dd/yyyy", font=("Arial", 15))
-        # self.configure_entry(self.event_date_entry)
-        self.event_date_entry.pack()
-
-        # Event Time entry
-        self.event_time_label = tkinter.Label(self.tkn, text="Event Time: HH:MM AM/PM")
-        self.configure_label(self.event_time_label)
-        self.event_time_label.pack()
-        self.event_time_entry = tkinter.Entry(self.tkn)
-        self.configure_entry(self.event_time_entry)
-        self.event_time_entry.pack()
-
-        # Event Location entry
-        self.event_location_label = tkinter.Label(self.tkn, text="Event Location:")
-        self.configure_label(self.event_location_label)
-        self.event_location_label.pack()
-        self.event_location_entry = tkinter.Entry(self.tkn)
-        self.configure_entry(self.event_location_entry)
-        self.event_location_entry.pack()
-
-        # Event Description entry
-        self.event_description_label = tkinter.Label(self.tkn, text="Event Description:")
-        self.configure_label(self.event_description_label)
-        self.event_description_label.pack()
-        self.event_description_entry = tkinter.Entry(self.tkn)
-        self.configure_entry(self.event_description_entry)
-        self.event_description_entry.pack()
-
-        # Register button
-        self.register_button = tkinter.Button(self.tkn, text="Create Event", command=self.registerEvent)
-        self.configure_button(self.register_button)
-        self.register_button.pack(pady=10)
-
-        #back to admin dashboard button
-        self.back_button = tkinter.Button(self.tkn, text="Back to Admin Dashboard", command=self.admin_dashboard)
-        self.configure_button(self.back_button)
-        self.back_button.pack(pady=10)
 
 
     def user_dashboard(self):
@@ -1206,10 +1218,21 @@ class EventHub():
         self.configure_label(feedback_label)
         feedback_label.grid(row=1, column=0, pady=10, sticky="w", padx=30)
 
+        #combobox for feedback
+        self.feedback_combobox = ttk.Combobox(eventdetails_frame, values=["Good","Average","Bad"])
+        self.feedback_combobox.grid(row=1, column=1, pady=10, sticky="w", padx=30)
+
+
+        #additonal comments label
+        additional_comments_label = tkinter.Label(eventdetails_frame, text="Additional Comments")
+        self.configure_label(additional_comments_label)
+        additional_comments_label.grid(row=2, column=0, pady=10, sticky="w", padx=30)
+
+
         #feedback entry
         self.feedback_entry = tkinter.Entry(eventdetails_frame)
         self.configure_entry(self.feedback_entry)
-        self.feedback_entry.grid(row=2, column=0, pady=10, sticky="w", padx=30)
+        self.feedback_entry.grid(row=2, column=1, pady=10, sticky="w", padx=30)
 
         #feedback submit button
         self.feedback_submit_button = tkinter.Button(eventdetails_frame, text="Submit", command=self.submit_feedback)
