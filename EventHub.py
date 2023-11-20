@@ -1,4 +1,5 @@
 import os
+import re
 import tkinter
 from tkinter import messagebox
 from tkinter import filedialog
@@ -144,20 +145,7 @@ class EventHub():
         button.configure(bg="#0078d4", fg="white", font=("Verdana", 12), relief="raised")
         #button rounded border
         button.configure(borderwidth=3, highlightthickness=3, width=20, height=1)
-
-    # def configure_button(self, button):
-    #     button.configure(
-    #         corjer_radius=6,
-    #         border_width=0,
-    #         fg_color=["#3B8ED0", "#1F6AA5"],
-    #         hover_color=["#36719F", "#144870"],
-    #         border_color=["#3E454A", "#949A9F"],
-    #         text_color=["#DCE4EE", "#DCE4EE"],
-    #         text_color_disabled=["gray74", "gray60"]
-    #     )
-
-         
-
+    
 
     def configure_entry(self, entry_widget):
         entry_widget.config(
@@ -356,141 +344,177 @@ class EventHub():
         label.configure(bg="white")
         label.pack(pady=20)
 
+        # Create tabs
+        self.tab_control = ttk.Notebook(self.tkn)
+        tab1 = ttk.Frame(self.tab_control, width=200, height=200)
+        tab2 = ttk.Frame(self.tab_control, width=200, height=100)
+        self.tab_control.add(tab1, text='Register as User', sticky="nsew")
+        self.tab_control.add(tab2, text='Register as Organizer', sticky="nsew")
+        self.tab_control.pack(expand=1, fill='both')
 
-        #tabs for register as user or organizer
-        #create tabs
-        tab_control = ttk.Notebook(self.tkn)
-        tab1 = ttk.Frame(tab_control,width=200, height=200)
-        tab2 = ttk.Frame(tab_control,width=200, height=100)
-        tab_control.add(tab1, text='Register as User',sticky="nsew")
-        tab_control.add(tab2, text='Register as Organizer',sticky="nsew")
-        tab_control.pack(expand=1, fill='both')
-
-        #tab text and position to center
-        tab_control.tab(0, text="Register as User",compound=tkinter.CENTER)
-        tab_control.tab(1, text="Register as Organizer",compound=tkinter.CENTER)
-
-        #tab1 for user label and entry side by side
+        # Tab 1: Register as User
+        tab1_frame = tkinter.Frame(tab1)
+        tab1_frame.pack(padx=20, pady=20)
 
         # First Name entry
-        self.first_name_label = tkinter.Label(tab1, text="First Name:")
+        self.first_name_label = tkinter.Label(tab1_frame, text="First Name:")
         self.configure_label(self.first_name_label)
-        self.first_name_label.pack()
-        self.first_name_entry = tkinter.Entry(tab1)
+        self.first_name_label.grid(row=0, column=0)
+        self.first_name_entry = tkinter.Entry(tab1_frame)
         self.configure_entry(self.first_name_entry)
-        self.first_name_entry.pack()
+        self.first_name_entry.grid(row=0, column=1)
 
         # Last Name entry
-        self.last_name_label = tkinter.Label(tab1, text="Last Name:")
+        self.last_name_label = tkinter.Label(tab1_frame, text="Last Name:")
         self.configure_label(self.last_name_label)
-        self.last_name_label.pack()
-        self.last_name_entry = tkinter.Entry(tab1)
+        self.last_name_label.grid(row=1, column=0)
+        self.last_name_entry = tkinter.Entry(tab1_frame)
         self.configure_entry(self.last_name_entry)
-        self.last_name_entry.pack()
+        self.last_name_entry.grid(row=1, column=1)
 
         # Email (Gmail ID) entry
-        self.email_entry = tkinter.Label(tab1, text="Email :")
+        self.email_entry = tkinter.Label(tab1_frame, text="Email :")
         self.configure_label(self.email_entry)
-        self.email_entry.pack()
-        self.email_entry = tkinter.Entry(tab1)
+        self.email_entry.grid(row=2, column=0)
+        self.email_entry = tkinter.Entry(tab1_frame)
         self.configure_entry(self.email_entry)
-        self.email_entry.pack()
+        self.email_entry.grid(row=2, column=1)
 
-        #set phone number default extension as +1 like enter the phone number with +1
         # Phone Number entry
-        self.phone_label = tkinter.Label(tab1, text="Phone Number:")
+        self.phone_label = tkinter.Label(tab1_frame, text="Phone Number:")
         self.configure_label(self.phone_label)
-        self.phone_label.pack()
-        self.user_phone_entry = tkinter.Entry(tab1)
+        self.phone_label.grid(row=3, column=0)
+        self.user_phone_entry = tkinter.Entry(tab1_frame)
         self.configure_entry(self.user_phone_entry)
-        self.user_phone_entry.pack()
+        self.user_phone_entry.grid(row=3, column=1)
 
         self.user_phone_entry.insert(0, "+1")
 
-
-
         # Password entry
-        self.password_label = tkinter.Label(tab1, text="Password:")
+        self.password_label = tkinter.Label(tab1_frame, text="Password:")
         self.configure_label(self.password_label)
-        self.password_label.pack()
-        self.user_password_entry = tkinter.Entry(tab1,show="*")
+        self.password_label.grid(row=4, column=0)
+        self.user_password_entry = tkinter.Entry(tab1_frame, show="*")
         self.configure_entry(self.user_password_entry)
-        self.user_password_entry.pack()
+        self.user_password_entry.grid(row=4, column=1)
 
-                
+                #password valodation's
+        # Password must be atleast 8 characters long
+        # Password must contain atleast one digit
+        # Password must contain atleast one uppercase letter
+        # Password must contain atleast one lowercase letter
+        # Special characters like $&@#%*
+        #show then in green if valid else red
+        # Password entry
+        self.password_label0 = tkinter.Label(tab1_frame, text="Password must be atleast 8 characters long",font=("Helvetica", 8),fg="red")
+        self.password_label0.grid(row=5, column=0, columnspan=2)
 
+        self.password_label1 = tkinter.Label(tab1_frame, text="Password must contain atleast one digit",font=("Helvetica", 8),fg="red")
+        self.password_label1.grid(row=6, column=0, columnspan=2)
 
+        self.password_label2 = tkinter.Label(tab1_frame, text="Password must contain atleast one uppercase letter",font=("Helvetica", 8),fg="red")
+        self.password_label2.grid(row=7, column=0, columnspan=2)
 
-        
+        self.password_label3 = tkinter.Label(tab1_frame, text="Password must contain atleast one lowercase letter",font=("Helvetica", 8),fg="red")
+        self.password_label3.grid(row=8, column=0, columnspan=2)
 
+        self.password_label4 = tkinter.Label(tab1_frame, text="Password must contain atleast one special character",font=("Helvetica", 8),fg="red")
+        self.password_label4.grid(row=9, column=0, columnspan=2)
+
+        # Check if passentry is 8 characters long
+        self.user_password_entry.bind("<KeyRelease>", lambda event: self.password_validation(event))
 
         # Register button
-        self.register_button = tkinter.Button(tab1, text="Register", command=self.registerUser)
+        self.register_button = tkinter.Button(tab1_frame, text="Register", command=self.registerUser)
         self.configure_button(self.register_button)
-        self.register_button.pack(pady=20)
+        self.register_button.grid(row=10, column=0, columnspan=2, pady=20)
 
         # Back button to return to the welcome page
-        self.back_button = tkinter.Button(tab1, text="Back to Welcome", command=self.show_welcome_page)
+        self.back_button = tkinter.Button(tab1_frame, text="Back to Welcome", command=self.show_welcome_page)
         self.configure_button(self.back_button)
-        self.back_button.pack(pady=10)
+        self.back_button.grid(row=11, column=0, columnspan=2, pady=10)
 
-        #tab2 for organizer
+        # Tab 2: Register as Organizer
+        tab2_frame = tkinter.Frame(tab2)
+        tab2_frame.pack(padx=20, pady=20)
 
-        # organizer full name entry
-        self.organizer_name_label = tkinter.Label(tab2, text="Organizer Full Name:")
+        # Organizer full name entry
+        self.organizer_name_label = tkinter.Label(tab2_frame, text="Organizer Full Name:")
         self.configure_label(self.organizer_name_label)
-        self.organizer_name_label.pack()
-        self.organizer_name_entry = tkinter.Entry(tab2)
+        self.organizer_name_label.grid(row=0, column=0)
+        self.organizer_name_entry = tkinter.Entry(tab2_frame)
         self.configure_entry(self.organizer_name_entry)
-        self.organizer_name_entry.pack()
+        self.organizer_name_entry.grid(row=0, column=1)
 
-        #organization name entry
-        self.organization_name_label = tkinter.Label(tab2, text="Organization Name:")
+        # Organization name entry
+        self.organization_name_label = tkinter.Label(tab2_frame, text="Organization Name:")
         self.configure_label(self.organization_name_label)
-        self.organization_name_label.pack()
-        self.organization_name_entry = tkinter.Entry(tab2)
+        self.organization_name_label.grid(row=1, column=0)
+        self.organization_name_entry = tkinter.Entry(tab2_frame)
         self.configure_entry(self.organization_name_entry)
-        self.organization_name_entry.pack()
+        self.organization_name_entry.grid(row=1, column=1)
 
-        # organizer email entry
-        self.organizer_email_label = tkinter.Label(tab2, text="Organization Email:")
+        # Organizer email entry
+        self.organizer_email_label = tkinter.Label(tab2_frame, text="Organization Email:")
         self.configure_label(self.organizer_email_label)
-        self.organizer_email_label.pack()
-        self.organizer_email_entry = tkinter.Entry(tab2)
+        self.organizer_email_label.grid(row=2, column=0)
+        self.organizer_email_entry = tkinter.Entry(tab2_frame)
         self.configure_entry(self.organizer_email_entry)
-        self.organizer_email_entry.pack()
+        self.organizer_email_entry.grid(row=2, column=1)
 
-
-
-        #organizer phone number entry
-        self.organizer_phone_label = tkinter.Label(tab2, text="Organizer Phone Number:")
+        # Organizer phone number entry
+        self.organizer_phone_label = tkinter.Label(tab2_frame, text="Organizer Phone Number:")
         self.configure_label(self.organizer_phone_label)
-        self.organizer_phone_label.pack()
-        self.organizer_phone_entry = tkinter.Entry(tab2)
+        self.organizer_phone_label.grid(row=3, column=0)
+        self.organizer_phone_entry = tkinter.Entry(tab2_frame)
         self.configure_entry(self.organizer_phone_entry)
-        self.organizer_phone_entry.pack()
+        self.organizer_phone_entry.grid(row=3, column=1)
 
         self.organizer_phone_entry.insert(0, "+1")
 
         # Password entry
-        self.password_label = tkinter.Label(tab2, text="Password:")
+        self.password_label = tkinter.Label(tab2_frame, text="Password:")
         self.configure_label(self.password_label)
-        self.password_label.pack()
-        self.organizer_password_entry = tkinter.Entry(tab2,show="*")
+        self.password_label.grid(row=4, column=0)
+        self.organizer_password_entry = tkinter.Entry(tab2_frame, show="*")
         self.configure_entry(self.organizer_password_entry)
-        self.organizer_password_entry.pack()
+        self.organizer_password_entry.grid(row=4, column=1)
 
+        #similar to user password validation
+        # Password must be atleast 8 characters long
+        # Password must contain atleast one digit
+        # Password must contain atleast one uppercase letter
+        # Password must contain atleast one lowercase letter
+        # Special characters like $&@#%*
 
+        # Password entry
+        self.password_label6 = tkinter.Label(tab2_frame, text="Password must be atleast 8 characters long",font=("Helvetica", 8),fg="red")
+        self.password_label6.grid(row=5, column=0, columnspan=2)
+
+        self.password_label7 = tkinter.Label(tab2_frame, text="Password must contain atleast one digit",font=("Helvetica", 8),fg="red")
+        self.password_label7.grid(row=6, column=0, columnspan=2)
+
+        self.password_label8 = tkinter.Label(tab2_frame, text="Password must contain atleast one uppercase letter",font=("Helvetica", 8),fg="red")
+        self.password_label8.grid(row=7, column=0, columnspan=2)
+
+        self.password_label9 = tkinter.Label(tab2_frame, text="Password must contain atleast one lowercase letter",font=("Helvetica", 8),fg="red")
+        self.password_label9.grid(row=8, column=0, columnspan=2)
+
+        self.password_label10 = tkinter.Label(tab2_frame, text="Password must contain atleast one special character",font=("Helvetica", 8),fg="red")
+        self.password_label10.grid(row=9, column=0, columnspan=2)
+
+        # Check if passentry is 8 characters long
+        self.organizer_password_entry.bind("<KeyRelease>", lambda event: self.password_validation(event))
 
         # Register button
-        self.register_button = tkinter.Button(tab2, text="Register", command=self.registerOrganizer)
+        self.register_button = tkinter.Button(tab2_frame, text="Register", command=self.registerOrganizer)
         self.configure_button(self.register_button)
-        self.register_button.pack(pady=20)
-        
+        self.register_button.grid(row=10, column=0, columnspan=2, pady=20)
+
         # Back button to return to the welcome page
-        self.back_button = tkinter.Button(tab2, text="Back to Welcome", command=self.show_welcome_page)
+        self.back_button = tkinter.Button(tab2_frame, text="Back to Welcome", command=self.show_welcome_page)
         self.configure_button(self.back_button)
-        self.back_button.pack(pady=10)
+        self.back_button.grid(row=11, column=0, columnspan=2, pady=10)
 
     #organizerdashboard
     def organizer_dashboard(self):
@@ -1151,6 +1175,102 @@ class EventHub():
 
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #password_validation
+    def password_validation(self,event):
+
+       
+        #get current tab from  tab_control = ttk.Notebook(self.tkn)
+        self.current_tab = self.tab_control.tab(self.tab_control.select(), "text")
+
+
+        #check register tab 
+        if self.current_tab == "Register as User":
+            password = self.user_password_entry.get()
+
+                    #check if 8 characters
+            if len(password) >= 8:
+                #change the self.password_label to green'
+                self.password_label0.config(fg="green")
+            
+            #atleast one uppercase
+            if re.search("[A-Z]", password):
+                #change the self.password_label to green'
+                self.password_label2.config(fg="green")
+            
+            #atleast one lowercase
+            if re.search("[a-z]", password):
+                #change the self.password_label to green'
+                self.password_label3.config(fg="green")
+
+            #atleast one digit
+            if re.search("[0-9]", password):
+                #change the self.password_label to green'
+                self.password_label1.config(fg="green")
+
+            #atleast one special character
+            if re.search("[!@#$%^&*]", password):
+                #change the self.password_label to green'
+                self.password_label4.config(fg="green")
+
+            #if all conditions are met
+            #remove the password validation labels
+            if len(password) >= 8 and re.search("[A-Z]", password) and re.search("[a-z]", password) and re.search("[0-9]", password) and re.search("[!@#$%^&*]", password):
+                self.password_label0.destroy()
+                self.password_label1.destroy()
+                self.password_label2.destroy()
+                self.password_label3.destroy()
+                self.password_label4.destroy()
+            
+        elif self.current_tab == "Register as Organizer":
+            password = self.organizer_password_entry.get()
+
+            #similar to user password validation
+            #check if 8 characters
+            if len(password) >= 8:
+                #change the self.password_label to green'
+                self.password_label6.config(fg="green")
+
+            #atleast one uppercase
+            if re.search("[A-Z]", password):
+                #change the self.password_label to green'
+                self.password_label7.config(fg="green")
+
+            #atleast one lowercase
+            if re.search("[a-z]", password):
+                #change the self.password_label to green'
+                self.password_label8.config(fg="green") 
+            
+            #atleast one digit
+            if re.search("[0-9]", password):
+                #change the self.password_label to green'
+                self.password_label9.config(fg="green")
+
+            #atleast one special character
+            if re.search("[!@#$%^&*]", password):
+                #change the self.password_label to green'
+                self.password_label10.config(fg="green")
+
+            #if all conditions are met
+            #remove the password validation labels  
+            if len(password) >= 8 and re.search("[A-Z]", password) and re.search("[a-z]", password) and re.search("[0-9]", password) and re.search("[!@#$%^&*]", password):
+                self.password_label6.destroy()
+                self.password_label7.destroy()
+                self.password_label8.destroy()
+                self.password_label9.destroy()
+                self.password_label10.destroy()
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            
+
+
+            
+
+
+
+        
+
+        
 
     #unregister_for_event
     def unregister_for_event(self):
