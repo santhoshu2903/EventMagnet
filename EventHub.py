@@ -89,7 +89,7 @@ class EventHub():
             organizerID INT NOT NULL,
             eventName VARCHAR(255) NOT NULL,
             eventDate DATE NOT NULL,
-            eventTime datetime NOT NULL,
+            eventTime TIME NOT NULL,
             eventLocation VARCHAR(255) NOT NULL,
             eventDescription TEXT NOT NULL,
             eventImage VARCHAR(255) NOT NULL,
@@ -1131,7 +1131,7 @@ class EventHub():
         self.user_feedback_canvas.create_window((0,0), window=user_feedback_frame, anchor="nw")
 
         #display the images in the frame
-        self.display_events(user_feedback_frame,None,True)
+        self.display_events(user_feedback_frame,self.current_user_object,True)
         
 
 
@@ -1376,7 +1376,7 @@ class EventHub():
         #display the events page
         self.organizer_dashboard()
     #uploadEventImage
-    def uploadEventImage(self):
+    def uploadEventImage(self,update=False):
         #get the event name
         event_name = self.event_name_entry.get()
 
@@ -1399,10 +1399,22 @@ class EventHub():
         event_image = event_image.resize((200, 300), Image.LANCZOS)
         event_image = ImageTk.PhotoImage(event_image)
 
-        #create a label to display the image
-        event_image_label = tkinter.Label(self.organzier_create_events_canvas, image=event_image)
-        event_image_label.image = event_image
-        event_image_label.pack()
+        if update:
+            #delete the previous image
+            #clear the frame event_image_frame
+            for widget in self.event_image_frame.winfo_children():
+                widget.destroy()
+
+            #display image there
+            event_image_label = tkinter.Label(self.event_image_frame, image=event_image)
+            event_image_label.image = event_image
+            event_image_label.pack()
+
+        else:
+            #create a label to display the image
+            event_image_label = tkinter.Label(self.organzier_create_events_canvas, image=event_image)
+            event_image_label.image = event_image
+            event_image_label.pack()
 
         #update the upload event image button to uploaded 
         self.upload_button.configure(text="Uploaded")
@@ -1412,7 +1424,8 @@ class EventHub():
     def display_events(self,frame,current_user_object=None,feedback=False):
         # Connect to the MySQL database
         # print("display events")
-
+        print(self.user_type)
+        events=[]
         if self.user_type == "organizer":
             with self.database.cursor() as cursor:
                 # Retrieve event data from the 'event' table in MySQL
@@ -1421,11 +1434,8 @@ class EventHub():
         elif current_user_object:
             with self.database.cursor() as cursor:
                 #retrieve the event ids of the events registered by the user
-                cursor.execute("SELECT eventID FROM eventhub.eventRegistration WHERE userID=%s", (current_user_object[0],))
+                cursor.execute("SELECT eventID FROM eventhub.eventRegistration WHERE userID=%s", (self.current_user_object[0],))
                 event_ids = cursor.fetchall()
-
-                events=[]
-
                 for event_id in event_ids:
                     #retrieve the event details of the events registered by the user
                     cursor.execute("SELECT * FROM eventhub.event WHERE eventID=%s", (event_id[0],))
@@ -1436,6 +1446,8 @@ class EventHub():
                 # Retrieve event data from the 'event' table in MySQL
                 cursor.execute("SELECT * FROM eventhub.event")
                 events = cursor.fetchall()
+        
+        print(events)
 
         for i, event in enumerate(events):
             # print(event)
@@ -1523,10 +1535,148 @@ class EventHub():
 
 
     #update_event_details
-    def update_event_details(self):
-        #clear events_tab
-        for widget in self.organzier_create_events_canvas.winfo_children():
+    def update_event_details(self,frame,event):
+        #clear frame  
+        for widget in frame.winfo_children():
             widget.destroy()
+
+        #display event name
+        label = tkinter.Label(frame, text="Update Event Details", font=("Helvetica", 20))
+        label.configure(bg="white")
+        label.grid(row=0, column=0, columnspan=2, pady=20)
+
+        #display event image frame to right
+        self.event_image_frame = tkinter.Frame(frame)
+        self.event_image_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+
+        #display event image
+        displayImage = Image.open(event[7])
+        displayImage = displayImage.resize((200, 250), Image.LANCZOS)
+        displayImage = ImageTk.PhotoImage(displayImage)
+        image_label = tkinter.Label(self.event_image_frame, image=displayImage)
+        image_label.image = displayImage
+        image_label.grid(row=0, column=0, padx=10, pady=10)
+
+        #change image button to upload new image    
+        self.upload_button = tkinter.Button(self.event_image_frame, text="Upload Event Image", command=lambda: self.uploadEventImage(True))
+        self.configure_button(self.upload_button)
+        self.upload_button.grid(row=1, column=0, pady=10, sticky="w", padx=30)
+        #width of the button
+        self.upload_button.configure(width=30)
+
+        #frame from column 1
+        eventdetails_frame = tkinter.Frame(frame)
+        eventdetails_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+
+        # Event Name label and entry filled with details to updated 
+        self.event_name_label = tkinter.Label(eventdetails_frame, text="Event Name: ")
+        self.configure_label(self.event_name_label)
+        self.event_name_label.grid(row=0, column=0, pady=10, padx=30, sticky="w")
+
+        self.event_name_entry = tkinter.Entry(eventdetails_frame)
+        self.configure_entry(self.event_name_entry)
+        self.event_name_entry.grid(row=0, column=1, pady=10, sticky="w", padx=30)
+
+        # Event Date label and entry filled with details to updated
+        self.event_date_label = tkinter.Label(eventdetails_frame, text="Event Date: ")
+        self.configure_label(self.event_date_label)
+        self.event_date_label.grid(row=1, column=0, pady=10, sticky="w", padx=30)
+
+        self.event_date_entry = DateEntry(eventdetails_frame)
+        self.event_date_entry.grid(row=1, column=1, pady=10, sticky="w", padx=30)
+
+        # Event Time label and entry filled with details to updated
+        self.event_time_label = tkinter.Label(eventdetails_frame, text="Event Time: ")
+        self.configure_label(self.event_time_label)
+        self.event_time_label.grid(row=2, column=0, pady=10, sticky="w", padx=30)
+
+        self.event_time_entry = tkinter.Entry(eventdetails_frame)
+        self.configure_entry(self.event_time_entry)
+        self.event_time_entry.grid(row=2, column=1, pady=10, sticky="w", padx=30)
+
+        # Event Location label and entry filled with details to updated
+        self.event_location_label = tkinter.Label(eventdetails_frame, text="Event Location: ")
+        self.configure_label(self.event_location_label)
+        self.event_location_label.grid(row=3, column=0, pady=10, sticky="w", padx=30)
+
+        self.event_location_entry = tkinter.Entry(eventdetails_frame)
+        self.configure_entry(self.event_location_entry)
+        self.event_location_entry.grid(row=3, column=1, pady=10, sticky="w", padx=30)
+
+        # Event Description label and entry filled with details to updated
+        self.event_description_label = tkinter.Label(eventdetails_frame, text="Event Description: ")
+        self.configure_label(self.event_description_label)
+        self.event_description_label.grid(row=4, column=0, pady=10, sticky="w", padx=30)
+
+        self.event_description_entry = tkinter.Entry(eventdetails_frame)
+        self.configure_entry(self.event_description_entry)
+        self.event_description_entry.grid(row=4, column=1, pady=10, sticky="w", padx=30)
+
+        #fill the entry with the current event details
+        self.event_name_entry.insert(0,event[2])
+        #set date from the details
+        self.event_date_entry.set_date(event[3])
+        self.event_time_entry.insert(0,event[4])
+        self.event_location_entry.insert(0,event[5])
+        self.event_description_entry.insert(0,event[6])
+
+        #update event button
+        self.update_event_button = tkinter.Button(eventdetails_frame, text="Update Event", command=self.update_event)
+        self.configure_button(self.update_event_button)
+        self.update_event_button.grid(row=5, column=0, pady=10, sticky="w", padx=30)
+        #width of the button
+        self.update_event_button.configure(width=30)
+
+        #back to organizer dashboard show event details button
+        self.back_button = tkinter.Button(eventdetails_frame, text="Back to Organizer Dashboard", command=self.organizer_dashboard)
+        self.configure_button(self.back_button)
+        #deep bottom center
+        self.back_button.grid(row=6, column=0, pady=10,sticky="w",padx=30)
+        #configure button width
+        self.back_button.configure(width=30)
+
+    #update_event
+    def update_event(self):
+        #get the event details
+        event_name = self.event_name_entry.get()
+        event_date = self.event_date_entry.get()
+        event_date = datetime.strptime(event_date, '%m/%d/%y').date()
+        event_time = self.event_time_entry.get()
+        event_location = self.event_location_entry.get()
+        event_description = self.event_description_entry.get()
+        image_path =""
+        try:
+            image_path = self.current_image_path
+        except:
+            pass
+
+        #check if all the fields are filled
+        if event_name == "" or event_date == "" or event_time == "" or event_location == "" or event_description == "":
+            messagebox.showerror("Error", "Please fill all the fields")
+            return
+
+        #get the event id
+        event_id = self.current_event[0]
+
+        if image_path == "":
+            image_path = self.current_event[7]
+        #update the event details in the database with path too
+        with self.database.cursor() as cursor:
+            cursor.execute("UPDATE eventhub.event SET eventName=%s,eventDate=%s,eventTime=%s,eventLocation=%s,eventDescription=%s,eventImage=%s WHERE eventID=%s", (event_name,event_date,event_time,event_location,event_description,image_path,event_id,))
+            self.database.commit()
+
+            cursor.close()
+
+        #update the event details in the current event
+        self.current_event = (event_id,self.current_event[1],event_name,event_date,event_time,event_location,event_description,image_path,self.current_event[8])
+
+        #event successfully updated
+        messagebox.showinfo("Success", "Event Successfully Updated")
+
+
+        #display the event details page
+        self.show_event_details_page(self.current_event,self.organzier_events_canvas)
+
 
         
 
@@ -1554,32 +1704,6 @@ class EventHub():
         eventdetails_frame = tkinter.Frame(frame)
         eventdetails_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
 
-        # if feedback:
-        #     #feedback label
-        #     feedback_label = tkinter.Label(eventdetails_frame, text="Feedback")
-        #     self.configure_label(feedback_label)
-        #     feedback_label.grid(row=0, column=0, pady=10, sticky="w", padx=30)
-
-        #     #feedback entry
-        #     self.feedback_entry = tkinter.Entry(eventdetails_frame)
-        #     self.configure_entry(self.feedback_entry)
-        #     self.feedback_entry.grid(row=1, column=0, pady=10, sticky="w", padx=30)
-
-        #     #feedback submit button
-        #     self.feedback_submit_button = tkinter.Button(eventdetails_frame, text="Submit", command=self.submit_feedback)
-        #     self.configure_button(self.feedback_submit_button)
-        #     self.feedback_submit_button.grid(row=2, column=0, pady=10, sticky="w", padx=30)
-
-        #     #back to user dashboard button
-        #     self.back_button = tkinter.Button(eventdetails_frame, text="Back to User Dashboard", command=self.user_dashboard)
-        #     self.configure_button(self.back_button)
-        #     #deep bottom center
-        #     self.back_button.grid(row=3, column=0, pady=10,sticky="w",padx=30)
-        #     #configure button width
-        #     self.back_button.configure(width=30)
-        #     return
-        # else:  
-            # Event Name label + event name
         self.event_name_label = tkinter.Label(eventdetails_frame, text="Event Name: " + str(eventdetails[2]))
         self.configure_label(self.event_name_label)
         self.event_name_label.grid(row=0, column=0, pady=10, padx=30, sticky="w")
@@ -1608,7 +1732,7 @@ class EventHub():
         if self.user_type == "organizer":
 
             #update event dteails button
-            self.update_event_button = tkinter.Button(eventdetails_frame, text="Update Event Details", command=self.update_event_details)
+            self.update_event_button = tkinter.Button(eventdetails_frame, text="Update Event Details", command=lambda: self.update_event_details(frame,eventdetails))
             self.configure_button(self.update_event_button)
             self.update_event_button.grid(row=5, column=0, pady=10, sticky="w", padx=30)
             #width of the button    
@@ -2420,6 +2544,10 @@ class EventHub():
         eventDate = self.event_date_entry.get()
         eventDate = datetime.strptime(eventDate, '%m/%d/%Y').date()
         eventTime = self.event_time_entry.get()
+        #convert time to time format HH:MM AM/PM
+        eventTime = datetime.strptime(eventTime, '%I:%M %p').time()
+
+        print(eventTime,type(eventTime))
         eventLocation = self.event_location_entry.get()
         eventDescription = self.event_description_entry.get()
         #path
@@ -2428,8 +2556,6 @@ class EventHub():
         #get current organizer id from current_user_object
         organizer_id = self.current_user_object[0]
 
-
-
         # Validate the user's input
         if eventName == "" or eventDate == "" or eventTime == "" or eventLocation == "" or eventDescription == "":
             messagebox.showerror("Error", "Please fill in all fields")
@@ -2437,7 +2563,6 @@ class EventHub():
             # Insert the user's input into the database with organizerID
             query = "INSERT INTO eventhub.event(eventName, eventDate, eventTime, eventLocation, eventDescription, organizerID,eventImage) VALUES (%s, %s, %s, %s, %s, %s,%s)"
             values = (eventName, eventDate, eventTime, eventLocation, eventDescription, organizer_id,eventImage)
-
 
             self.cursor.execute(query, values)
             self.database.commit()
